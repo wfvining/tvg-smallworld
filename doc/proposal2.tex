@@ -12,8 +12,8 @@
 This paper will investigate the emergence of small-world behavior in
 time-varying graphs that represent the interactions between mobile
 agents. This builds on the work of Tang et al~\cite{Tang2010} who
-modeled time-varying interaction networks for agents moving around a
-fixed space and periodically making large jumps to a different
+modeled time-varying interaction networks for agents moving in a
+finite space and periodically making large jumps to a distant
 location. I intend to model a more physically plausible scenario where
 agents cannot be ``teleported'' in this way. I will investigate
 whether small-world behavior emerges without ``teleportation,'' and if
@@ -33,9 +33,9 @@ rate to determine the interaction network at each time-step. As
 in~\cite{Tang2010} an edge will be added between agents at time $t$ if
 they are within some fixed distance $d$ of each-other. For ease and
 simplicity agents will be modeled as particles and collisions will not
-be considered.  I will implement the movement described
-in~\cite{Tang2010} as well as Brownian motion, a L{\'e}vy flight, and
-a correlated random walk.
+be considered.  I will implement the ``teleportation'' movement
+described in~\cite{Tang2010} as well as Brownian motion, a L{\'e}vy
+flight, and a correlated random walk.
 
 %% Talk to Melanie about whether this is a good null model
 
@@ -47,13 +47,16 @@ section~\ref{sec:comp-methods} to generate 10 interaction networks for
 Random Walk) for a total of 160 networks. Due to time constraints I
 will select some reasonable fixed parameters for each random walk
 (keeping the speed of the agents the same for all types of
-motion). For each graph I will compute the metrics presented by Tang
+motion). For each network I will compute the metrics presented by Tang
 et al.~\cite{Tang2010} and Grindrod et al.~\cite{Grindrod2011}. To
-validate the results I will generate an ER graph~\cite{Erdos1960} with
-for each time-step with the same number of edges as the original graph
-in that time-step. I will compute the same metrics for each of these
-graphs to determine if the observed behavior can be attributed just to
-random chance, or if it depends on the the motion of the agents.
+validate the results I will generate a series of ER
+graphs~\cite{Erdos1960} corresponding to each interaction network.
+Each time-step in the original network will be replaced by an ER graph
+with the same number of edges as the original graph in that
+time-step. I will compute the same metrics for each of these
+interaction networks to determine if the observed behavior can be
+attributed to random chance and the number of interactions, or if it
+depends on the motion of the agents.
 
 \bibliographystyle{acm}
 \bibliography{tvg-smallworld}
