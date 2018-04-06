@@ -1,0 +1,58 @@
+\documentclass{article}
+
+\usepackage[letterpaper,margin=1in,top=0.5in]{geometry}
+
+\title{Small World Behavior in Time-Varying Interaction Networks of
+  Mobile Agents}
+
+\author{Will Vining}
+
+\begin{document}
+\maketitle
+\section{Introduction}
+There is a great deal of research investigating the properties of
+networks that are models of complex systems in nature, in particular
+scale free networks~\cite{Barabasi1999} and small-world
+networks~\cite{Watts1998}. Most of this work, however, is primarily
+focused on static networks. Naturally occuring networks, particularly
+those that describe interactions between mobile agents, are
+inherrently dynamic with edges being added and removed frequently as
+individual agents form new communication channels and break old
+ones. These networks can be modeled as time varying
+graphs~\cite{Casteigts2012,Tang2010} which describe how edges are
+added and removed from the network over time. Tang et
+al.~\cite{Tang2010} presented an analysis of time-varying graphs that
+drew a parallel between the properties of some randomly varying graphs
+and the properties of small-world graphs. The authors found that these
+graphs exhibit ``small-world behavior'' when time is considered, even
+if the aggregate graph (all adeges from all time steps taken together)
+does not.
+
+This work will replicate and extend the work of Tang et
+al~\cite{Tang2010} who used a model of agents moving in a finite area
+to generate time varying interaction networks by representing agents
+as vertices and adding an edge between two agents whenever they were
+close together. In this model agents move at a constant velocity and
+occaisionally take large jumps to some location a large distance
+away. I will extend the model by creating time-varying interaction
+graphs for agents exhibiting different types of motion, in particular
+correlated random walks and deterministic motion with no long random
+jumps, and investigate whether the small-world behavior holds for
+these graphs.
+
+%% This represents a more physically realistic scenario than that
+%% studied by Tang et al. since agents are not arbitrarily and
+%% magically transported across large distances in space.
+
+\section{Methods}
+I will implement a model of agents moving on a grid and use it to
+generate time varying graphs based on agent interactions (agents are
+considered to interact when they are in adjacent cells). I will
+implement a random walk and a deterministic walk on the grid. I will
+run experiments with different numbers of agents for each type of
+walker to determine if and when small-world behavior emerges.
+
+\bibliography{tvg-smallworld}{}
+\bibliographystyle{acm}
+
+\end{document}
