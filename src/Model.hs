@@ -89,12 +89,12 @@ stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
           let (x,y) = position agent
               y'    = y + (stepSize * (speed agent)) * (sin $ heading agent)
               x'    = x + (stepSize * (speed agent)) * (cos $ heading agent)
-              (pos,heading') = bounce (stepSize * (speed agent)) (heading agent) x' y'
+              (position', heading') = bounce (heading agent) x' y'
           in
-            agent { position = pos, heading = heading' }
+            agent { position = position', heading = heading' }
 
-        bounce :: Double -> Double -> Double -> Double -> (Point, Double)
-        bounce speed heading x y
+        bounce :: Double -> Double -> Double -> (Point, Double)
+        bounce heading x y
           | x > xMax && y > yMax =
             let heading' = reflectX heading
                 heading'' = reflectY heading'
@@ -118,5 +118,5 @@ stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
           | x < xMin             = ((x - 2 * (x - xMin), y), reflectY heading)
           | x > xMax             = ((x - 2 * (x - xMax), y), reflectY heading)
           | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
-          | y > yMax             = ((x, y - 2 * (y - yMax)), reflectY heading)
+          | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
           | otherwise            = ((x, y), heading)
