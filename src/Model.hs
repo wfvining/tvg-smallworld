@@ -61,25 +61,21 @@ updateAgent agent = case update agent of
   Heading f  -> let (heading', update') = f agent in agent { heading = heading', update = update' }
   Position f -> let (position', update') = f agent in agent { position = position', update = update' }
 
--- Some simple 2D vector operations for vectors represened by tupples.
-(<->) :: Num a => (a,a) -> (a,a) -> (a,a)
-(<->) (x1,y1) (x2,y2) = (x1 - x2, y1 - y2)
+-- reflect a unit vector across the x-axis returning the direction of
+-- the resulting vector
+reflectX :: Double -> Double
+reflectX direction =
+  let (x, y) = (cos direction, sin direction)
+      theta  = atan ((-y) / x)
+  in if x < 0 then theta + pi else if (-y) < 0 then theta + (2*pi) else theta
 
-(<+>) :: Num a => (a,a) -> (a,a) -> (a,a)
-(<+>) (x1,y1) (x2,y2) = (x1 + x2, y1 + y2)
-
-(<.>) :: Num a => (a,a) -> (a,a) -> a
-(<.>) (x1,y1) (x2,y2) = x1*x2 + y1*y2
-
-(.*) :: Num a => a -> (a,a) -> (a,a)
-(.*) s (x, y) = (s*x, s*y)
-
-reflect :: Double -> Double -> (Double,Double) -> Double
-reflect direction magnitude normal =
-  let v  = (magnitude * cos direction, magnitude * sin direction)
-      v' = v <-> ((2*(v <.> normal)) .* normal)
-  in
-    atan $ uncurry (/) v'
+-- reflect a unit vector across the y-axis returning the direction of
+-- the resulting vector
+reflectY :: Double -> Double
+reflectY direction =
+  let (x, y) = (cos direction, sin direction)
+      theta = atan (y / (-x))
+  in if (-x) < 0 then theta + pi else if y < 0 then theta + (2*pi) else theta
 
 stepModel :: Double -> Model -> Model
 stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
@@ -100,27 +96,27 @@ stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
         bounce :: Double -> Double -> Double -> Double -> (Point, Double)
         bounce speed heading x y
           | x > xMax && y > yMax =
-            let heading' = reflect heading speed (0,1)
-                heading'' = reflect heading' speed (1,0)
+            let heading' = reflectX heading
+                heading'' = reflectY heading'
             in
               ((x - 2 * (x - xMax), y - 2 * (y - yMax)), heading'')
           | x < xMin && y < yMin =
-            let heading'  = reflect heading speed (0,-1)
-                heading'' = reflect heading' speed (-1,0)
+            let heading'  = reflectX heading
+                heading'' = reflectY heading'
             in
               ((x - 2 * (x - xMin), y - 2 * (y - yMin)), heading'')
           | x > xMax && y < yMin =
-            let heading'  = reflect heading speed (0,-1)
-                heading'' = reflect heading' speed (1,0)
+            let heading'  = reflectX heading
+                heading'' = reflectY heading'
             in
               ((x - 2 * (x - xMax), y - 2 * (y - yMin)), heading'')
           | x < xMin && y > yMax =
-            let heading'  = reflect heading speed (0,1)
-                heading'' = reflect heading' speed (-1,0)
+            let heading'  = reflectX heading
+                heading'' = reflectY heading'
             in
               ((x - 2 * (x - xMin), y - 2 * (y - yMax)), heading'')
-          | x < xMin             = ((x - 2 * (x - xMin), y), reflect heading speed (-1,0))
-          | x > xMax             = ((x - 2 * (x - xMax), y), reflect heading speed (1,0))
-          | y < yMin             = ((x, y - 2 * (y - yMin)), reflect heading speed (0,-1))
-          | y > yMax             = ((x, y - 2 * (y - yMax)), reflect heading speed (0,1))
+          | x < xMin             = ((x - 2 * (x - xMin), y), reflectY heading)
+          | x > xMax             = ((x - 2 * (x - xMax), y), reflectY heading)
+          | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
+          | y > yMax             = ((x, y - 2 * (y - yMax)), reflectY heading)
           | otherwise            = ((x, y), heading)
