@@ -2,8 +2,10 @@ module Model
   ( Agent(..)
   , Model(..)
   , MovementStrategy(..)
+  , Point(..)
   , headingStrategy
-  , positionStrategy
+  , positionStrategy2
+  , positionStrategy3
   , identityStrategy
   , newModel
   , mapAgents
@@ -34,8 +36,14 @@ data Model = Model { agents :: [Agent] -- list of agents
 headingStrategy :: [Double] -> (Double -> Double -> Double) -> MovementStrategy
 headingStrategy (s:state) f = Heading (\a -> (f (heading a) s, headingStrategy state f))
 
-positionStrategy :: [Double] -> (Point -> Double -> Double -> Point) -> MovementStrategy
-positionStrategy (s:s':state) f = Position (\a -> (f (position a) s s', positionStrategy state f))
+positionStrategy  :: [Double] -> (Point -> Double -> Point) -> MovementStrategy
+positionStrategy  (s:state) f = Position (\a -> (f (position a) s, positionStrategy state f))
+
+positionStrategy2 :: [Double] -> (Point -> Double -> Double -> Point) -> MovementStrategy
+positionStrategy2 (s:s':state) f = Position (\a -> (f (position a) s s', positionStrategy2 state f))
+
+positionStrategy3 :: [Double] -> (Point -> Double -> Double -> Double -> Point) -> MovementStrategy
+positionStrategy3 (s:s':s'':state) f = Position (\a -> (f (position a) s s' s'', positionStrategy3 state f))
 
 identityStrategy :: MovementStrategy
 identityStrategy = Identity
