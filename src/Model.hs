@@ -83,15 +83,15 @@ reflectX direction =
 reflectY :: Double -> Double
 reflectY direction =
   let (x, y) = (cos direction, sin direction)
-      theta = atan (y / (-x))
+      theta  = atan (y / (-x))
   in if (-x) < 0 then theta + pi else if y < 0 then theta + (2*pi) else theta
 
 stepModel :: Double -> Model -> Model
 stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
-  where xMax = range m
-        yMax = range m
-        xMin = -(range m)
-        yMin = -(range m)
+  where xMax = size m
+        yMax = size m
+        xMin = -(size m)
+        yMin = -(size m)
 
         moveAgent :: Agent -> Agent
         moveAgent agent =
@@ -130,5 +130,5 @@ stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
           | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
           | otherwise            = ((x, y), heading)
 
-mapAgents :: Model -> (Agent -> a) -> [a]
-mapAgents m f = map f (agents m)
+mapAgents :: (Agent -> a) -> Model -> [a]
+mapAgents f m = map f (agents m)
