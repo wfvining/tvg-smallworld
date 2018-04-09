@@ -1,20 +1,25 @@
 module Model
   ( Agent(..)
   , Model(..)
+  , MovementStrategy(..)
+  , headingStrategy
+  , positionStrategy
+  , identityStrategy
   , newModel
+  , mapAgents
+  , stepModel
   ) where
-
-import Prelude hiding (id)
 
 type Point = (Double, Double)
 
 -- a movement strategy returns a new heading and a new movement strategy
 data MovementStrategy = Heading (Agent -> (Double, MovementStrategy))
                       | Position (Agent -> (Point, MovementStrategy))
+                      | Identity
 
 type Initializer = (Int -> (Point, Double))
 
-data Agent = Agent { id       :: Int
+data Agent = Agent { agentID  :: Int
                    , position :: Point
                    , speed    :: Double
                    , heading  :: Double
@@ -31,6 +36,9 @@ headingStrategy (s:state) f = Heading (\a -> (f (heading a) s, headingStrategy s
 
 positionStrategy :: [Double] -> (Point -> Double -> Double -> Point) -> MovementStrategy
 positionStrategy (s:s':state) f = Position (\a -> (f (position a) s s', positionStrategy state f))
+
+identityStrategy :: MovementStrategy
+identityStrategy = Identity
 
 newModel :: Double
          -> Double
@@ -49,7 +57,7 @@ makeAgents :: Double
            -> [MovementStrategy]
            -> [Agent]
 makeAgents speed init movement = [ let (position, heading) = init i in
-                                          Agent { id       = i
+                                          Agent { agentID  = i
                                                 , position = position
                                                 , speed    = speed
                                                 , heading  = heading
@@ -60,6 +68,7 @@ updateAgent :: Agent -> Agent
 updateAgent agent = case update agent of
   Heading f  -> let (heading', update') = f agent in agent { heading = heading', update = update' }
   Position f -> let (position', update') = f agent in agent { position = position', update = update' }
+  Identity   -> agent
 
 -- reflect a unit vector across the x-axis returning the direction of
 -- the resulting vector
@@ -120,3 +129,6 @@ stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
           | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
           | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
           | otherwise            = ((x, y), heading)
+
+mapAgents :: Model -> (Agent -> a) -> [a]
+mapAgents m f = map f (agents m)
