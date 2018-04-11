@@ -29,15 +29,17 @@ initRectangle dimensionX dimensionY =
 initSquare :: Int -> Initializer
 initSquare dimension = initRectangle dimension dimension
 
+teleportationModel :: Double -> Double -> Double -> Double -> Int -> IO Model
+teleportationModel arenaSize commRange agentSpeed p numAgents = do
+  gens <- replicateM numAgents newStdGen
+  let rs             = map (randomRs (-arenaSize,arenaSize::Double)) gens
+      teleportations = (zipWith positionStrategy3 rs (repeat (teleport p)))
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) teleportations
+
 main :: IO ()
 main = do
-  gens <- replicateM 100 newStdGen
-  let rs = map (randomRs (-100,100::Double)) gens
-  let model = newModel arenaSize commRange agentSpeed (initSquare 10) (zipWith positionStrategy3 rs (repeat (teleport 0.1)))
-      positions = mapAgents position model
-  mapM_ print positions
-  putStrLn " --- "
-  mapM_ print $ map (mapAgents position) (take 100 $ iterate (stepModel 1.0) model)
-  where arenaSize  = 100
+  model <- teleportationModel arenaSize commRange agentSpeed 0.001 100
+  mapM_ print $ map (mapAgents position) (take 1000 $ iterate (stepModel 1.0) model)
+  where arenaSize  = 1000
         commRange  = 1
         agentSpeed = 1
