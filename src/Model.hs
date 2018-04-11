@@ -10,6 +10,7 @@ module Model
   , identityStrategy
   , newModel
   , mapAgents
+  , getInteractions
   , stepModel
   ) where
 
@@ -28,6 +29,9 @@ data Agent = Agent { agentID  :: Int
                    , heading  :: Double
                    , update   :: MovementStrategy
                    }
+
+instance Eq Agent where
+  a1 == a2 = agentID a1 == agentID a2
 
 data Model = Model { agents :: [Agent] -- list of agents
                    , size   :: Double  -- bounds of the arena
@@ -71,7 +75,7 @@ makeAgents speed init movement = [ let (position, heading) = init i in
                                                 , speed    = speed
                                                 , heading  = heading
                                                 , update   = strat }
-                                      | (i, strat) <- zip [0..] movement ]
+                                      | (i, strat) <- zip [1..] movement ]
 
 updateAgent :: Agent -> Agent
 updateAgent agent = case update agent of
@@ -138,6 +142,12 @@ stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
           | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
           | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
           | otherwise            = ((x, y), heading)
+
+getInteractions :: Model -> [(Int,Int)]
+getInteractions m =
+  [ (agentID a1, agentID a2) | a1 <- agents m, a2 <- agents m, distance (position a1) (position a2) < d, a1 /= a2]
+  where d = range m
+        distance (x1, y1) (x2, y2) = sqrt ((x1 - x2)^2 + (y1 - y2)^2)
 
 mapAgents :: (Agent -> a) -> Model -> [a]
 mapAgents f m = map f (agents m)

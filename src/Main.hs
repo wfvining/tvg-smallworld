@@ -3,6 +3,8 @@ module Main where
 import Model
 import System.Random
 
+import System.Environment
+
 import Control.Monad
 
 teleport :: Double -> (Point -> Double -> Double -> Double -> Point)
@@ -50,8 +52,9 @@ brownianModel arenaSize commRange agentSpeed numAgents = do
 
 main :: IO ()
 main = do
-  model <- brownianModel arenaSize commRange agentSpeed 4
-  mapM_ print $ map (mapAgents position) (take 1000 $ iterate (stepModel 1.0) model)
+  [n] <- getArgs
+  model <- brownianModel arenaSize commRange agentSpeed (read n)
+  mapM_ print $ map (getInteractions) (take 1000 $ iterate (stepModel 1.0) model)
   where arenaSize  = 1000
-        commRange  = 1
+        commRange  = 1.0
         agentSpeed = 1
