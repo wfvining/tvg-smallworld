@@ -2,6 +2,7 @@ module Model
   ( Agent(..)
   , Model(..)
   , MovementStrategy(..)
+  , Initializer(..)
   , Point(..)
   , headingStrategy
   , positionStrategy2
