@@ -8,8 +8,13 @@ import Control.Monad
 teleport :: Double -> (Point -> Double -> Double -> Double -> Point)
 teleport p = (\c p' x y -> if p' < p then (x, y) else c)
 
+brownian :: Double -> Double -> Double
+brownian _ = id
+
 -- angle of the ray from the origin to the point, measured from the x-axis
 direction :: Point -> Double
+-- define the direction for 0,0 to be 0
+direction (0, 0) = 0
 direction (x, y) =
   if x < 0
   then pi + theta
@@ -36,9 +41,16 @@ teleportationModel arenaSize commRange agentSpeed p numAgents = do
       teleportations = (zipWith positionStrategy3 rs (repeat (teleport p)))
   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) teleportations
 
+brownianModel :: Double -> Double -> Double -> Int -> IO Model
+brownianModel arenaSize commRange agentSpeed numAgents = do
+  gens <- replicateM numAgents newStdGen
+  let rs = map (randomRs (0, 2*pi)) gens
+      turns = zipWith headingStrategy rs (repeat brownian)
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
+
 main :: IO ()
 main = do
-  model <- teleportationModel arenaSize commRange agentSpeed 0.001 100
+  model <- brownianModel arenaSize commRange agentSpeed 4
   mapM_ print $ map (mapAgents position) (take 1000 $ iterate (stepModel 1.0) model)
   where arenaSize  = 1000
         commRange  = 1
