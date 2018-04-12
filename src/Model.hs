@@ -37,6 +37,7 @@ instance Eq Agent where
 data Model = Model { agents :: [Agent] -- list of agents
                    , size   :: Double  -- bounds of the arena
                    , range  :: Double  -- communication range of the agents
+                   , numAgents :: Int  -- number of agents
                    }
 
 headingStrategy :: [Double] -> (Double -> Double -> Double) -> MovementStrategy
@@ -64,6 +65,7 @@ newModel size range speed init strategies =
   Model { agents = makeAgents speed init strategies
         , size   = size
         , range  = range
+        , numAgents = length strategies
         }
 
 makeAgents :: Double
@@ -76,7 +78,7 @@ makeAgents speed init movement = [ let (position, heading) = init i in
                                                 , speed    = speed
                                                 , heading  = heading
                                                 , update   = strat }
-                                      | (i, strat) <- zip [1..] movement ]
+                                      | (i, strat) <- zip [0..] movement ]
 
 updateAgent :: Agent -> Agent
 updateAgent agent = case update agent of

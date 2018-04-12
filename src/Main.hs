@@ -6,6 +6,8 @@ import InteractionNetwork
 import System.Random
 import System.Environment
 
+import Numeric.LinearAlgebra.Sparse (prd)
+
 import Control.Monad
 
 teleport :: Double -> (Point -> Double -> Double -> Double -> Point)
@@ -51,6 +53,9 @@ brownianModel arenaSize commRange agentSpeed numAgents = do
       turns = zipWith headingStrategy rs (repeat brownian)
   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
 
+getInteractionNetwork :: [Model] -> InteractionNetwork
+getInteractionNetwork ts@(m:_) = interactionNetwork (numAgents m) $ map getInteractions ts
+
 main :: IO ()
 main = do
   (motionType:n:arena:rest) <- getArgs
@@ -64,6 +69,6 @@ main = do
              "brownian" -> do
                brownianModel arenaSize commRange agentSpeed numAgents
 
-  mapM_ print $ map (getInteractions) (runModel 1.0 1000 model)
+  mapM_ prd $ getInteractionNetwork (runModel 1.0 1000 model)
   where commRange  = 1.0
         agentSpeed = 1
