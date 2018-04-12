@@ -12,6 +12,7 @@ module Model
   , mapAgents
   , getInteractions
   , stepModel
+  , runModel
   ) where
 
 type Point = (Double, Double)
@@ -142,6 +143,9 @@ stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
           | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
           | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
           | otherwise            = ((x, y), heading)
+
+runModel :: Double -> Int -> Model -> [Model]
+runModel stepSize steps = take steps . iterate (stepModel stepSize)
 
 getInteractions :: Model -> [(Int,Int)]
 getInteractions m =

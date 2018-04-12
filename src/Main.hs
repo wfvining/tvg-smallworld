@@ -1,8 +1,9 @@
 module Main where
 
 import Model
-import System.Random
+import InteractionNetwork
 
+import System.Random
 import System.Environment
 
 import Control.Monad
@@ -52,9 +53,17 @@ brownianModel arenaSize commRange agentSpeed numAgents = do
 
 main :: IO ()
 main = do
-  [n] <- getArgs
-  model <- brownianModel arenaSize commRange agentSpeed (read n)
-  mapM_ print $ map (getInteractions) (take 1000 $ iterate (stepModel 1.0) model)
-  where arenaSize  = 1000
-        commRange  = 1.0
+  (motionType:n:arena:rest) <- getArgs
+  let arenaSize = read arena
+      numAgents = read n
+
+  model <- case motionType of
+             "teleport" -> do
+               let p = read (head rest)
+               teleportationModel arenaSize commRange agentSpeed p numAgents
+             "brownian" -> do
+               brownianModel arenaSize commRange agentSpeed numAgents
+
+  mapM_ print $ map (getInteractions) (runModel 1.0 1000 model)
+  where commRange  = 1.0
         agentSpeed = 1
