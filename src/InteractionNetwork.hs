@@ -51,10 +51,12 @@ ctpl network = total / fromIntegral (n*(n-1))
                                                  Nothing -> acc) []
 
 
--- | Geeralized BFS for time varying graphs What about unreachable
---   nodes? This is simply avoided by Tang et al by using the temporal
---   efficiency. When they compute the CTPL, it appears that they
---   leave out any nodes which are unreachable (although this is unclear).
+-- | Geeralized BFS for time varying graphs. Returns the length of the
+-- shortest temporal path from a source node to all other node in the
+-- network.
+--
+-- Any node `x' that is unreachable will apear in the result as (x,
+-- Nothing).
 bfs :: InteractionNetwork -> Int -> [(Int, Maybe Int)]
 bfs net source = bfs' 1 net (bit source) (S.singleton source) [(source, Just 0)] 
   where bfs' :: Int -> InteractionNetwork -> Integer -> S.Seq Int -> [(Int, Maybe Int)] -> [(Int, Maybe Int)]
@@ -73,5 +75,3 @@ bfs net source = bfs' 1 net (bit source) (S.singleton source) [(source, Just 0)]
         -- | Get all nodes adjacent to n that have not beed discovered yet.
         explore :: Integer -> Snapshot -> Int -> [Int]
         explore visited s = filter (not . testBit visited) . map fst . toListSV . extractRow s
-                                
-               
