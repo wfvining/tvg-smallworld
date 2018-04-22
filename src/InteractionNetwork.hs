@@ -68,7 +68,7 @@ bfs net source = bfs' 1 net (bit source) (S.singleton source) [(source, Just 0)]
             if front /= source -- source acts as a sentinel, marking the "begining" of the queue
             then bfs' t net visited' queue' tpLengths'
             else bfs' (t+1) future visited' queue' tpLengths'
-        bfs' _ [] visited _ tpLengths = undefined -- TODO: Fill in unreachable nodes with (n, Nothing)
+        bfs' _ [] visited _ tpLengths = [ (x, Nothing) | x <- [0..((numAgents net) - 1)], not $ testBit visited x ] ++ tpLengths
 
         -- | Get all nodes adjacent to n that have not beed discovered yet.
         explore :: Integer -> Snapshot -> Int -> [Int]
