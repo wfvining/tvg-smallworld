@@ -43,13 +43,13 @@ tcc net = (sum cis) / fromIntegral n
 
 -- | Compute the characteristic temporal path length of the graph.
 ctpl :: InteractionNetwork -> Double
-ctpl network = total / fromIntegral n
+ctpl network = total / (fromIntegral . length $ pathLengths)
   where pathLengths = map (\(_, (Just x)) -> x) . filter (\(_, x) -> case x of
                                                                        Just 0 -> False
                                                                        Just x -> True
                                                                        Nothing -> False) $
                       concat [ bfs network u | u <- [0..(n-1)] ]
-        n = length pathLengths
+        n = numAgents network
         total = fromIntegral $ sum pathLengths
 
 -- | Temporal Global Efficiency
