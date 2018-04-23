@@ -13,6 +13,7 @@ import Numeric.LinearAlgebra.Sparse
 
 import qualified Data.Sequence as S
 import Data.Bits
+import Data.Maybe
 
 type Snapshot = SpMatrix Double
 type InteractionNetwork = [Snapshot]
@@ -41,15 +42,21 @@ tcc net = (sum cis) / fromIntegral n
 
 -- | Compute the characteristic temporal path length of the graph.
 ctpl :: InteractionNetwork -> Double
-ctpl network = total / fromIntegral (n*(n-1))
-  where n = numAgents network
-        total = fromIntegral $ sum [ sum . extantPaths . bfs network $ u | u <- [0..(n-1)] ]
+ctpl network = total / fromIntegral n
+  where pathLengths = map (\(_, (Just x)) -> x) . filter (isJust . snd) . concat $ [ bfs network u | u <- [0..(n-1)] ]
+        n = length pathLengths
+        total = fromIntegral $ sum pathLengths
 
-        extantPaths :: [(Int, Maybe Int)] -> [Int]
-        extantPaths = foldr (\(_, path) acc -> case path of
-                                                 Just x  -> x:acc
-                                                 Nothing -> acc) []
+-- | Temporal Global Efficiency
+tge :: InteractionNetwork -> Double
+tge network = total / fromIntegral (n*(n-1))
+  where n     = numAgents network
+        total = sum [ rpSum . bfs network $ u | u <- [0..(n-1)] ]
 
+        rpSum :: [(Int, Maybe Int)] -> Double
+        rpSum = foldr (\(_, path) acc -> case path of
+                                           Just x -> (1/fromIntegral x) + acc
+                                           Nothing -> acc) 0.0
 
 -- | Geeralized BFS for time varying graphs. Returns the length of the
 -- shortest temporal path from a source node to all other node in the
