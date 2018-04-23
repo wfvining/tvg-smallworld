@@ -4,6 +4,7 @@ module InteractionNetwork
   , interactionNetwork
   , tcc
   , ctpl
+  , tge
   , InteractionNetwork(..)
   ) where
 
@@ -43,7 +44,11 @@ tcc net = (sum cis) / fromIntegral n
 -- | Compute the characteristic temporal path length of the graph.
 ctpl :: InteractionNetwork -> Double
 ctpl network = total / fromIntegral n
-  where pathLengths = map (\(_, (Just x)) -> x) . filter (isJust . snd) . concat $ [ bfs network u | u <- [0..(n-1)] ]
+  where pathLengths = map (\(_, (Just x)) -> x) . filter (\(_, x) -> case x of
+                                                                       Just 0 -> False
+                                                                       Just x -> True
+                                                                       Nothing -> False) $
+                      concat [ bfs network u | u <- [0..(n-1)] ]
         n = length pathLengths
         total = fromIntegral $ sum pathLengths
 
@@ -72,7 +77,7 @@ bfs net source = bfs' 1 net (bit source) (S.singleton source) [(source, Just 0)]
               frontier   = explore visited s front -- get all adjacent nodes to front that have not already been visited
               visited'   = visited .|. (foldr (\x acc -> setBit acc x) zeroBits frontier)
               queue'     = rest S.>< (S.fromList $ frontier ++ [front])
-              tpLengths' = map (\x -> (x, Just t)) frontier
+              tpLengths' = tpLengths ++ map (\x -> (x, Just t)) frontier
           in
             if front /= source -- source acts as a sentinel, marking the "begining" of the queue
             then bfs' t net visited' queue' tpLengths'

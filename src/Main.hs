@@ -69,6 +69,10 @@ main = do
              "brownian" -> do
                brownianModel arenaSize commRange agentSpeed numAgents
 
-  mapM_ prd $ getInteractionNetwork (runModel 1.0 1000 model)
+  -- mapM_ prd $ getInteractionNetwork (runModel 1.0 1000 model)
+  let inet = getInteractionNetwork (runModel 1.0 500 model)
+  putStrLn $ "TCC:  " ++ (show $ tcc inet)
+  putStrLn $ "CTPL: " ++ (show $ ctpl inet)
+  putStrLn $ "TGE:  " ++ (show $ tge inet)
   where commRange  = 1.0
         agentSpeed = 1
