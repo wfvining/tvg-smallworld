@@ -29,6 +29,8 @@ numAgents :: InteractionNetwork -> Int
 numAgents = fst . dimSM . head
 
 -- | Compute the temporal correlation coefficient
+--
+-- Should be 1 if every snapshot is the same
 tcc :: InteractionNetwork -> Double
 tcc net = (sum cis) / fromIntegral n
   where (n,_) = dim $ head net
@@ -42,6 +44,9 @@ tcc net = (sum cis) / fromIntegral n
           where diagonals (_, d, _) = toListSM d
 
 -- | Compute the characteristic temporal path length of the graph.
+--
+-- Any nodes that do not have a temporal path are excluded from the
+-- average.
 ctpl :: InteractionNetwork -> Double
 ctpl network = total / (fromIntegral . length $ pathLengths)
   where pathLengths = map (\(_, (Just x)) -> x) . filter (\(_, x) -> case x of
