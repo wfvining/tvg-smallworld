@@ -10,6 +10,7 @@ module InteractionNetwork
 
 import Data.Sparse.Common (extractRow)
 import Data.Sparse.SpMatrix
+import Data.Sparse.SpVector
 import Numeric.LinearAlgebra.Sparse
 
 import qualified Data.Sequence as S
@@ -31,17 +32,28 @@ numAgents = fst . dimSM . head
 -- | Compute the temporal correlation coefficient
 --
 -- Should be 1 if every snapshot is the same
+--
+-- Follows the equation from Clausset paper, accounding for vertices
+-- that don't have any edges at all.
 tcc :: InteractionNetwork -> Double
-tcc net = (sum cis) / fromIntegral n
-  where (n,_) = dim $ head net
-        timesteps = fromIntegral $ length net
-        cis = map (/ timesteps) $ foldr (\ !acc cits -> zipWith (+) cits acc) (repeat 0.0) [ cit t t' | (t,t') <- zip net (tail net) ]
-        cit :: Snapshot -> Snapshot -> [Double]
-        cit t t' = let numerators  = map (\(_,_,x) -> x) . diagonals . diagPartitions $ t ##^ t'
-                       x           = map (sum . map snd) $ (map toListSV) $ toRowsL t
-                       x'          = map (sum . map snd) $ (map toListSV) $ toRowsL t'
-                   in zipWith3 (\numerator s s' -> numerator / (sqrt $ s * s')) numerators x x'
-          where diagonals (_, d, _) = toListSM d
+tcc net = undefined
+  where cit :: Snapshot -> Snapshot -> [Double]
+        cit t t' = let rows  = toRowsL t
+                       rows' = toRowsL t'
+                   in
+                     zipWith cij rows rows'
+        cij :: SpVector Double -> SpVector Double -> Double
+        cij r r'
+          | nnz r == 0 || nnz r' == 0 = 1
+          | otherwise = (dot' (toListSV r) (toListSV r') 0.0) / (sqrt $ (sum r) * (sum r'))
+
+        dot' :: [(Int, Double)] -> [(Int, Double)] -> Double -> Double
+        dot' [] _ acc = acc
+        dot' _ [] acc = acc
+        dot' xs@((x,vx):restx) ys@((y,vy):resty) acc
+          | x == y = dot' restx resty (vx*vy + acc)
+          | x < y  = dot' restx ys acc
+          | x > y  = dot' xs resty acc
 
 -- | Compute the characteristic temporal path length of the graph.
 --
