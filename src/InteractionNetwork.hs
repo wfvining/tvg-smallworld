@@ -36,8 +36,10 @@ numAgents = fst . dimSM . head
 -- Follows the equation from Clausset paper, accounding for vertices
 -- that don't have any edges at all.
 tcc :: InteractionNetwork -> Double
-tcc net = undefined
-  where cit :: Snapshot -> Snapshot -> [Double]
+tcc net = (sum $ foldr (\xs acc -> zipWith (+) xs acc) (repeat 0.0) [ cit t t' | (t,t') <- zip net (tail net) ])
+          / (fromIntegral $ (timesteps-1) * numAgents net)
+  where timesteps = length net
+        cit :: Snapshot -> Snapshot -> [Double]
         cit t t' = let rows  = toRowsL t
                        rows' = toRowsL t'
                    in
