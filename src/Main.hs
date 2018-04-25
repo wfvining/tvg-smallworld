@@ -43,8 +43,9 @@ teleportationModel :: Double -> Double -> Double -> Double -> Int -> IO Model
 teleportationModel arenaSize commRange agentSpeed p numAgents = do
   gens <- replicateM numAgents newStdGen
   let rs             = map (randomRs (1,0::Double)) gens
-      teleportations = (zipWith positionStrategy3 rs (repeat (teleport p arenaSize arenaSize)))
+      teleportations = (zipWith positionStrategy3 rs (repeat (teleport p a a)))
   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) teleportations
+    where a = 2 * arenaSize
 
 brownianModel :: Double -> Double -> Double -> Int -> IO Model
 brownianModel arenaSize commRange agentSpeed numAgents = do
