@@ -10,8 +10,8 @@ import Numeric.LinearAlgebra.Sparse (prd)
 
 import Control.Monad
 
-teleport :: Double -> (Point -> Double -> Double -> Double -> Point)
-teleport p = (\c p' x y -> if p' < p then (x, y) else c)
+teleport :: Double -> Double -> Double -> (Point -> Double -> Double -> Double -> Point)
+teleport p w h = (\c p' x y -> if p' < p then (w*(x - 0.5), h*(y - 0.5)) else c)
 
 brownian :: Double -> Double -> Double
 brownian _ = id
@@ -42,8 +42,8 @@ initSquare dimension = initRectangle dimension dimension
 teleportationModel :: Double -> Double -> Double -> Double -> Int -> IO Model
 teleportationModel arenaSize commRange agentSpeed p numAgents = do
   gens <- replicateM numAgents newStdGen
-  let rs             = map (randomRs (-arenaSize,arenaSize::Double)) gens
-      teleportations = (zipWith positionStrategy3 rs (repeat (teleport p)))
+  let rs             = map (randomRs (1,0::Double)) gens
+      teleportations = (zipWith positionStrategy3 rs (repeat (teleport p arenaSize arenaSize)))
   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) teleportations
 
 brownianModel :: Double -> Double -> Double -> Int -> IO Model
@@ -70,7 +70,7 @@ main = do
                brownianModel arenaSize commRange agentSpeed numAgents
 
   -- mapM_ prd $ getInteractionNetwork (runModel 1.0 1000 model)
-  let inet = getInteractionNetwork (runModel 1.0 500 model)
+  let inet = drop 1000 $ getInteractionNetwork (runModel 1.0 1500 model)
   putStrLn $ "TCC:  " ++ (show $ tcc inet)
   putStrLn $ "CTPL: " ++ (show $ ctpl inet)
   putStrLn $ "TGE:  " ++ (show $ tge inet)
