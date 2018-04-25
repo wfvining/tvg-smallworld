@@ -29,11 +29,15 @@ interactionNetwork size = map (adjacencyMatrix size)
 numAgents :: InteractionNetwork -> Int
 numAgents = fst . dimSM . head
 
+allPairsBFS :: InteractionNetwork -> [[(Int, Maybe Int)]]
+allPairsBFS network = [ bfs network u | u <- [0..(n-1)] ]
+  where n = numAgents network
+
 -- | Compute the temporal correlation coefficient
 --
 -- Should be 1 if every snapshot is the same
 --
--- Follows the equation from Clausset paper, accounding for vertices
+-- Follows the equation from Clausset paper, accounting for vertices
 -- that don't have any edges at all.
 tcc :: InteractionNetwork -> Double
 tcc net = (sum $ foldr (\xs acc -> zipWith (+) xs acc) (repeat 0.0) [ cit t t' | (t,t') <- zip net (tail net) ])
@@ -67,18 +71,18 @@ ctpl network = total / (fromIntegral . length $ pathLengths)
                                                                        Just 0 -> False
                                                                        Just x -> True
                                                                        Nothing -> False) $
-                      concat [ bfs network u | u <- [0..(n-1)] ]
-        n = numAgents network
+                      concat $ allPairsBFS network
         total = fromIntegral $ sum pathLengths
 
 -- | Temporal Global Efficiency
 tge :: InteractionNetwork -> Double
 tge network = total / fromIntegral (n*(n-1))
   where n     = numAgents network
-        total = sum [ rpSum . bfs network $ u | u <- [0..(n-1)] ]
+        total = sum . map rpSum . allPairsBFS $ network
 
         rpSum :: [(Int, Maybe Int)] -> Double
         rpSum = foldr (\(_, path) acc -> case path of
+                                           Just 0 -> acc -- ignore self paths
                                            Just x -> (1/fromIntegral x) + acc
                                            Nothing -> acc) 0.0
 
