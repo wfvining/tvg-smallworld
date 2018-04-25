@@ -74,5 +74,5 @@ main = do
   putStrLn $ "TCC:  " ++ (show $ tcc inet)
   putStrLn $ "CTPL: " ++ (show $ ctpl inet)
   putStrLn $ "TGE:  " ++ (show $ tge inet)
-  where commRange  = 1.0
+  where commRange  = 5 -- From the Tang paper
         agentSpeed = 1
