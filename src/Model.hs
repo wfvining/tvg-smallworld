@@ -63,7 +63,7 @@ newModel :: Double
          -> Model
 newModel size range speed init strategies =
   Model { agents = makeAgents speed init strategies
-        , size   = size
+        , size   = size/2
         , range  = range
         , numAgents = length strategies
         }

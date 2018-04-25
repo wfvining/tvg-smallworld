@@ -5,6 +5,7 @@ module InteractionNetwork
   , tcc
   , ctpl
   , tge
+  , allPairsBFS
   , InteractionNetwork(..)
   ) where
 
@@ -65,23 +66,23 @@ tcc net = (sum $ foldr (\xs acc -> zipWith (+) xs acc) (repeat 0.0) [ cit t t' |
 --
 -- Any nodes that do not have a temporal path are excluded from the
 -- average.
-ctpl :: InteractionNetwork -> Double
-ctpl network = total / (fromIntegral . length $ pathLengths)
+ctpl :: InteractionNetwork -> [[(Int, Maybe Int)]] -> Double
+ctpl network bst = total / (fromIntegral . length $ pathLengths)
   where pathLengths = map (\(_, (Just x)) -> x) . filter (\(_, x) -> case x of
                                                                        Just 0 -> False
                                                                        Just x -> True
                                                                        Nothing -> False) $
-                      concat $ allPairsBFS network
+                      concat bst
         total = fromIntegral $ sum pathLengths
 
 -- | Temporal Global Efficiency
-tge :: InteractionNetwork -> Double
-tge network = total / fromIntegral (n*(n-1))
+tge :: InteractionNetwork -> [[(Int, Maybe Int)]] -> Double
+tge network bst = total / fromIntegral (n*(n-1))
   where n     = numAgents network
-        total = sum . map rpSum . allPairsBFS $ network
+        total = sum $ map rpSum bst
 
         rpSum :: [(Int, Maybe Int)] -> Double
-        rpSum = foldr (\(_, path) acc -> case path of
+        rpSum = foldr (\(_, path) !acc -> case path of
                                            Just 0 -> acc -- ignore self paths
                                            Just x -> (1/fromIntegral x) + acc
                                            Nothing -> acc) 0.0

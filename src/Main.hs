@@ -43,9 +43,8 @@ teleportationModel :: Double -> Double -> Double -> Double -> Int -> IO Model
 teleportationModel arenaSize commRange agentSpeed p numAgents = do
   gens <- replicateM numAgents newStdGen
   let rs             = map (randomRs (1,0::Double)) gens
-      teleportations = (zipWith positionStrategy3 rs (repeat (teleport p a a)))
+      teleportations = (zipWith positionStrategy3 rs (repeat (teleport p arenaSize arenaSize)))
   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) teleportations
-    where a = 2 * arenaSize
 
 brownianModel :: Double -> Double -> Double -> Int -> IO Model
 brownianModel arenaSize commRange agentSpeed numAgents = do
@@ -72,8 +71,9 @@ main = do
 
   -- mapM_ prd $ getInteractionNetwork (runModel 1.0 1000 model)
   let inet = drop 1000 $ getInteractionNetwork (runModel 1.0 1500 model)
+      temporalBST = allPairsBFS inet
   putStrLn $ "TCC:  " ++ (show $ tcc inet)
-  putStrLn $ "CTPL: " ++ (show $ ctpl inet)
-  putStrLn $ "TGE:  " ++ (show $ tge inet)
+  putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
+  putStrLn $ "TGE:  " ++ (show $ tge inet temporalBST)
   where commRange  = 5 -- From the Tang paper
         agentSpeed = 1
