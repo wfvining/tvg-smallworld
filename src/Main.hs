@@ -54,6 +54,9 @@ brownianModel arenaSize commRange agentSpeed numAgents = do
 getInteractionNetwork :: [Model] -> InteractionNetwork
 getInteractionNetwork ts@(m:_) = interactionNetwork (numAgents m) $ map getInteractions ts
 
+getInteractionNetworkAfter :: Int -> [Model] -> InteractionNetwork
+getInteractionNetworkAfter k ts = getInteractionNetwork $ drop k ts
+
 main :: IO ()
 main = do
   (motionType:n:arena:rest) <- getArgs
@@ -67,7 +70,7 @@ main = do
              "brownian" -> do
                brownianModel arenaSize commRange agentSpeed numAgents
 
-  let inet = getInteractionNetwork (runModel 1.0 500 model)
+  let inet = getInteractionNetworkAfter 1000 (runModel 1.0 1500 model)
       temporalBST = allPairsBFS inet
   putStrLn $ "TCC:  " ++ (show $ tcc inet)
   putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
