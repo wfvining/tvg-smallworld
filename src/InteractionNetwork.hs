@@ -30,6 +30,10 @@ allPairsBFS :: InteractionNetwork -> [[(Int, Maybe Int)]]
 allPairsBFS network = [ bfs network u | u <- [0..(n-1)] ]
   where n = numNodes network
 
+spectralRadius :: InteractionNetwork -> Double
+spectralRadius network = foldr (\s acc -> let rho = toList . eigenvaluesSH . trustSym $ toDense s in
+                                   if rho > acc then rho else acc) 0.0 (graph network)
+
 -- | Compute the temporal correlation coefficient
 --
 -- Should be 1 if every snapshot is the same
