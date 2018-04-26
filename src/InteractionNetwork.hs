@@ -9,30 +9,26 @@ module InteractionNetwork
   , InteractionNetwork(..)
   ) where
 
-import Data.Sparse.Common (extractRow)
-import Data.Sparse.SpMatrix
-import Data.Sparse.SpVector
-import Numeric.LinearAlgebra.Sparse
+import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Data (mkSparse, nCols)
 
 import qualified Data.Sequence as S
 import Data.Bits
 import Data.Maybe
 
-type Snapshot = SpMatrix Double
-type InteractionNetwork = [Snapshot]
+type Snapshot = AssocMatrix
+data InteractionNetwork = INet { numNodes :: Int , graph :: [Snapshot] }
 
 adjacencyMatrix :: Int -> [(Int,Int)] -> Snapshot
-adjacencyMatrix numNodes interactions = fromListSM (numNodes,numNodes) $ map (\(x, y) -> (x,y,1)) interactions
+adjacencyMatrix numNodes interactions = [((n, n), 0)] ++ map (\(x, y) -> ((x,y),1)) interactions
+  where n = numNodes - 1
 
 interactionNetwork :: Int -> [[(Int, Int)]] -> InteractionNetwork
-interactionNetwork size = map (adjacencyMatrix size)
-
-numAgents :: InteractionNetwork -> Int
-numAgents = fst . dimSM . head
+interactionNetwork size interactions = INet { numNodes = size, graph = map (adjacencyMatrix size) interactions }
 
 allPairsBFS :: InteractionNetwork -> [[(Int, Maybe Int)]]
 allPairsBFS network = [ bfs network u | u <- [0..(n-1)] ]
-  where n = numAgents network
+  where n = numNodes network
 
 -- | Compute the temporal correlation coefficient
 --
@@ -41,26 +37,20 @@ allPairsBFS network = [ bfs network u | u <- [0..(n-1)] ]
 -- Follows the equation from Clausset paper, accounting for vertices
 -- that don't have any edges at all.
 tcc :: InteractionNetwork -> Double
-tcc net = (sum $ foldr (\xs acc -> zipWith (+) xs acc) (repeat 0.0) [ cit t t' | (t,t') <- zip net (tail net) ])
-          / (fromIntegral $ (timesteps-1) * numAgents net)
-  where timesteps = length net
+tcc net = (sum $ foldr (\xs acc -> zipWith (+) xs acc) (repeat 0.0) [ cit t t' | (t,t') <- zip g (tail g) ])
+          / (fromIntegral $ (timesteps-1) * numNodes net)
+  where timesteps = length (graph net)
+        g         = graph net
+        
         cit :: Snapshot -> Snapshot -> [Double]
-        cit t t' = let rows  = toRowsL t
-                       rows' = toRowsL t'
+        cit t t' = let rows  = toRows $ toDense t
+                       rows' = toRows $ toDense t'
                    in
                      zipWith cij rows rows'
-        cij :: SpVector Double -> SpVector Double -> Double
-        cij r r'
-          | nnz r == 0 || nnz r' == 0 = 1
-          | otherwise = (dot' (toListSV r) (toListSV r') 0.0) / (sqrt $ (sum r) * (sum r'))
-
-        dot' :: [(Int, Double)] -> [(Int, Double)] -> Double -> Double
-        dot' [] _ acc = acc
-        dot' _ [] acc = acc
-        dot' xs@((x,vx):restx) ys@((y,vy):resty) acc
-          | x == y = dot' restx resty (vx*vy + acc)
-          | x < y  = dot' restx ys acc
-          | x > y  = dot' xs resty acc
+        cij :: Vector Double -> Vector Double -> Double
+        cij r r' = if sr == 0 || sr' == 0 then 1 else  (r <.> r') / (sqrt $ (sr) * (sr'))
+          where sr  = sumElements r
+                sr' = sumElements r'
 
 -- | Compute the characteristic temporal path length of the graph.
 --
@@ -78,7 +68,7 @@ ctpl network bst = total / (fromIntegral . length $ pathLengths)
 -- | Temporal Global Efficiency
 tge :: InteractionNetwork -> [[(Int, Maybe Int)]] -> Double
 tge network bst = total / fromIntegral (n*(n-1))
-  where n     = numAgents network
+  where n     = numNodes network
         total = sum $ map rpSum bst
 
         rpSum :: [(Int, Maybe Int)] -> Double
@@ -94,8 +84,8 @@ tge network bst = total / fromIntegral (n*(n-1))
 -- Any node `x' that is unreachable will apear in the result as (x,
 -- Nothing).
 bfs :: InteractionNetwork -> Int -> [(Int, Maybe Int)]
-bfs net source = bfs' 1 net (bit source) (S.singleton source) [(source, Just 0)] 
-  where bfs' :: Int -> InteractionNetwork -> Integer -> S.Seq Int -> [(Int, Maybe Int)] -> [(Int, Maybe Int)]
+bfs net source = bfs' 1 (graph net) (bit source) (S.singleton source) [(source, Just 0)] 
+  where bfs' :: Int -> [Snapshot] -> Integer -> S.Seq Int -> [(Int, Maybe Int)] -> [(Int, Maybe Int)]
         bfs' t net@(s:future) !visited queue tpLengths =
           let front S.:< rest = S.viewl queue
               frontier   = explore visited s front -- get all adjacent nodes to front that have not already been visited
@@ -106,8 +96,8 @@ bfs net source = bfs' 1 net (bit source) (S.singleton source) [(source, Just 0)]
             if front /= source -- source acts as a sentinel, marking the "begining" of the queue
             then bfs' t net visited' queue' tpLengths'
             else bfs' (t+1) future visited' queue' tpLengths'
-        bfs' _ [] visited _ tpLengths = [ (x, Nothing) | x <- [0..((numAgents net) - 1)], not $ testBit visited x ] ++ tpLengths
+        bfs' _ [] visited _ tpLengths = [ (x, Nothing) | x <- [0..((numNodes net) - 1)], not $ testBit visited x ] ++ tpLengths
 
         -- | Get all nodes adjacent to n that have not beed discovered yet.
         explore :: Integer -> Snapshot -> Int -> [Int]
-        explore visited s = filter (not . testBit visited) . map fst . toListSV . extractRow s
+        explore visited s source = map (snd . fst) $ filter (\((x,y),z) -> (z /= 0) && (x == source) && (not $ testBit visited y)) s

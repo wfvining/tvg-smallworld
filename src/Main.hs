@@ -6,8 +6,6 @@ import InteractionNetwork
 import System.Random
 import System.Environment
 
-import Numeric.LinearAlgebra.Sparse (prd)
-
 import Control.Monad
 
 teleport :: Double -> Double -> Double -> (Point -> Double -> Double -> Double -> Point)
@@ -69,8 +67,7 @@ main = do
              "brownian" -> do
                brownianModel arenaSize commRange agentSpeed numAgents
 
-  -- mapM_ prd $ getInteractionNetwork (runModel 1.0 1000 model)
-  let inet = drop 1000 $ getInteractionNetwork (runModel 1.0 1500 model)
+  let inet = getInteractionNetwork (runModel 1.0 500 model)
       temporalBST = allPairsBFS inet
   putStrLn $ "TCC:  " ++ (show $ tcc inet)
   putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
