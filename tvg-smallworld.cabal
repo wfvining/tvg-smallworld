@@ -23,3 +23,4 @@ executable tvg-smallworld
                      , random
                      , sparse-linear-algebra
                      , containers
+                     , normaldistribution >= 1.1

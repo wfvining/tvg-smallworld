@@ -10,11 +10,17 @@ import Numeric.LinearAlgebra.Sparse (prd)
 
 import Control.Monad
 
+import Data.Random.Normal
+
 teleport :: Double -> Double -> Double -> (Point -> Double -> Double -> Double -> Point)
 teleport p w h = (\c p' x y -> if p' < p then (w*(x - 0.5), h*(y - 0.5)) else c)
 
 brownian :: Double -> Double -> Double
 brownian _ = id
+
+crw :: Double -> Double -> Double
+crw h t = let x = h + t in
+  if x >= 0 && x <= 2*pi then x else x - 2*pi*(fromIntegral $ floor (x / (2*pi)))
 
 -- angle of the ray from the origin to the point, measured from the x-axis
 direction :: Point -> Double
@@ -53,6 +59,12 @@ brownianModel arenaSize commRange agentSpeed numAgents = do
       turns = zipWith headingStrategy rs (repeat brownian)
   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
 
+crwModel :: Double -> Double -> Double -> Double -> Int -> IO Model
+crwModel arenaSize commRange agentSpeed sigma numAgents = do
+   rs <- replicateM numAgents (normalsIO' (0.0, sigma))
+   let turns = zipWith headingStrategy rs (repeat crw)
+   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
+
 getInteractionNetwork :: [Model] -> InteractionNetwork
 getInteractionNetwork ts@(m:_) = interactionNetwork (numAgents m) $ map getInteractions ts
 
@@ -68,6 +80,9 @@ main = do
                teleportationModel arenaSize commRange agentSpeed p numAgents
              "brownian" -> do
                brownianModel arenaSize commRange agentSpeed numAgents
+             "crw"      -> do
+               let stdDev = read (head rest)
+               crwModel arenaSize commRange agentSpeed stdDev numAgents
 
   -- mapM_ prd $ getInteractionNetwork (runModel 1.0 1000 model)
   let inet = drop 1000 $ getInteractionNetwork (runModel 1.0 1500 model)
