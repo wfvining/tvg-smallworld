@@ -58,6 +58,18 @@ communicability network =
           let q' = q <> (inv $ (ident n) - (a*(toDense s))) in
             communicability' rest $ q' / scalar (norm_2 q')
 
+centralities :: InteractionNetwork -> (Vector Double, Vector Double)
+centralities network = (broadcastCentralities network q, receiveCentralities network q)
+  where q = communicability network
+
+broadcastCentralities :: InteractionNetwork -> Matrix Double -> Vector Double
+broadcastCentralities network q =
+  q #> (vector $ replicate (numNodes network) 1)
+
+receiveCentralities :: InteractionNetwork -> Matrix Double -> Vector Double
+receiveCentralities network q =
+  (vector $ replicate (numNodes network) 1) <# q
+
 -- | Compute the temporal correlation coefficient
 --
 -- Should be 1 if every snapshot is the same
