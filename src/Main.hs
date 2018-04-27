@@ -3,6 +3,8 @@ module Main where
 import Model
 import InteractionNetwork
 
+import Numeric.LinearAlgebra
+
 import System.Random
 import System.Environment
 
@@ -75,5 +77,7 @@ main = do
   putStrLn $ "TCC:  " ++ (show $ tcc inet)
   putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
   putStrLn $ "TGE:  " ++ (show $ tge inet temporalBST)
+  putStrLn $ "1/max ρ(·): " ++ (show $ 1 / (spectralRadius inet))
+  putStrLn $ "1/min ρ(·): " ++ (show $ 1 / (spectralRadius' inet))
   where commRange  = 5 -- From the Tang paper
         agentSpeed = 1

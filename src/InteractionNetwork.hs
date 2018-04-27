@@ -6,6 +6,9 @@ module InteractionNetwork
   , ctpl
   , tge
   , allPairsBFS
+  , spectralRadius
+  , spectralRadius'
+  , communicability
   , InteractionNetwork(..)
   ) where
 
@@ -30,9 +33,30 @@ allPairsBFS :: InteractionNetwork -> [[(Int, Maybe Int)]]
 allPairsBFS network = [ bfs network u | u <- [0..(n-1)] ]
   where n = numNodes network
 
+-- NOTE: the adjacency matrix is symmetric, symmetric matricies have real-valued eigenvalues.
 spectralRadius :: InteractionNetwork -> Double
-spectralRadius network = foldr (\s acc -> let rho = toList . eigenvaluesSH . trustSym $ toDense s in
+spectralRadius network = foldr (\s acc -> let rho = maxElement . cmap abs . eigenvaluesSH . trustSym $ toDense s in
                                    if rho > acc then rho else acc) 0.0 (graph network)
+
+-- minimum sr over all timesteps
+spectralRadius' :: InteractionNetwork -> Double
+spectralRadius' network = foldr (\s acc -> let rho = maxElement . cmap abs . eigenvaluesSH . trustSym $ toDense s in
+                                   if rho < acc then rho else acc) 0.0 (graph network)
+
+-- | Compute the normalized communicability matrix.
+communicability :: InteractionNetwork -> Matrix Double
+communicability network =
+  communicability' g (ident n)
+  -- take a < 1 per Grindrod 2010
+  -- a = 0.01 seems like it should be sufficient for the teleportation model
+  where a = 0.01 -- XXX: a < 1/max (ρ(A[k])) for k in 1..length g
+        n = numNodes network
+        g = graph network
+
+        communicability' []       q = q
+        communicability' (s:rest) q =
+          let q' = q <> (inv $ (ident n) - (a*(toDense s))) in
+            communicability' rest $ q' / scalar (norm_2 q')
 
 -- | Compute the temporal correlation coefficient
 --
