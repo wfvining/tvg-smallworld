@@ -3,10 +3,10 @@ module Main where
 import Model
 import InteractionNetwork
 
+import Numeric.LinearAlgebra
+
 import System.Random
 import System.Environment
-
-import Numeric.LinearAlgebra.Sparse (prd)
 
 import Control.Monad
 
@@ -68,6 +68,9 @@ crwModel arenaSize commRange agentSpeed sigma numAgents = do
 getInteractionNetwork :: [Model] -> InteractionNetwork
 getInteractionNetwork ts@(m:_) = interactionNetwork (numAgents m) $ map getInteractions ts
 
+getInteractionNetworkAfter :: Int -> [Model] -> InteractionNetwork
+getInteractionNetworkAfter k ts = getInteractionNetwork $ drop k ts
+
 main :: IO ()
 main = do
   (motionType:n:arena:rest) <- getArgs
@@ -84,11 +87,12 @@ main = do
                let stdDev = read (head rest)
                crwModel arenaSize commRange agentSpeed stdDev numAgents
 
-  -- mapM_ prd $ getInteractionNetwork (runModel 1.0 1000 model)
-  let inet = drop 1000 $ getInteractionNetwork (runModel 1.0 1500 model)
+  let inet = getInteractionNetworkAfter 1000 (runModel 1.0 1500 model)
       temporalBST = allPairsBFS inet
   putStrLn $ "TCC:  " ++ (show $ tcc inet)
   putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
   putStrLn $ "TGE:  " ++ (show $ tge inet temporalBST)
+  putStrLn $ "1/max ρ(·): " ++ (show $ 1 / (spectralRadius inet))
+  putStrLn $ "1/min ρ(·): " ++ (show $ 1 / (spectralRadius' inet))
   where commRange  = 5 -- From the Tang paper
         agentSpeed = 1
