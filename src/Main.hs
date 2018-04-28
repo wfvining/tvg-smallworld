@@ -98,8 +98,7 @@ main = do
   -- putStrLn $ "TCC:  " ++ (show $ tcc inet)
   -- putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
   -- putStrLn $ "TGE:  " ++ (show $ tge inet temporalBST)
-  putStrLn $ "1/max ρ(·): " ++ (show $ 1 / (spectralRadius inet))
-  putStrLn $ "1/min ρ(·): " ++ (show $ 1 / (spectralRadius' inet))
+  putStrLn $ "1/min sr: " ++ (show $ 1 / (spectralRadius' inet))
   saveMatrix ("centralities_"++motionType++"-"++n++"-"++arena++"-"++fileNameExtra) "%f" cm
   where commRange  = 5 -- From the Tang paper
         agentSpeed = 1
