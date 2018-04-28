@@ -84,15 +84,22 @@ main = do
              "brownian" -> do
                brownianModel arenaSize commRange agentSpeed numAgents
              "crw"      -> do
-               let stdDev = read (head rest)
+               let stdDev = pi * (read (head rest))
                crwModel arenaSize commRange agentSpeed stdDev numAgents
+
+  let fileNameExtra = case motionType of
+                        "teleport" -> head rest
+                        "crw"      -> head rest
+                        _          -> ""
 
   let inet = getInteractionNetworkAfter 1000 (runModel 1.0 1500 model)
       temporalBST = allPairsBFS inet
-  putStrLn $ "TCC:  " ++ (show $ tcc inet)
-  putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
-  putStrLn $ "TGE:  " ++ (show $ tge inet temporalBST)
+      cm = fromColumns . (\(a,b) -> a:b:[]) $ centralities inet
+  -- putStrLn $ "TCC:  " ++ (show $ tcc inet)
+  -- putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
+  -- putStrLn $ "TGE:  " ++ (show $ tge inet temporalBST)
   putStrLn $ "1/max ρ(·): " ++ (show $ 1 / (spectralRadius inet))
   putStrLn $ "1/min ρ(·): " ++ (show $ 1 / (spectralRadius' inet))
+  saveMatrix ("centralities_"++motionType++"-"++n++"-"++arena++"-"++fileNameExtra) "%f" cm
   where commRange  = 5 -- From the Tang paper
         agentSpeed = 1

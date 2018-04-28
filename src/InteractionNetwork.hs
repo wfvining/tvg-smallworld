@@ -9,6 +9,7 @@ module InteractionNetwork
   , spectralRadius
   , spectralRadius'
   , communicability
+  , centralities
   , InteractionNetwork(..)
   ) where
 
