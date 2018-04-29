@@ -9,6 +9,7 @@ module InteractionNetwork
   , spectralRadius
   , spectralRadius'
   , communicability
+  , oneHopCommunicability
   , InteractionNetwork(..)
   ) where
 
@@ -43,13 +44,27 @@ spectralRadius' :: InteractionNetwork -> Double
 spectralRadius' network =
   minimum $ map (maxElement . cmap abs . eigenvaluesSH . trustSym . toDense) (graph network)
 
+oneHopCommunicability :: InteractionNetwork -> Matrix Double
+oneHopCommunicability network =
+  communicability' g (ident n)
+  where a = 0.1
+        n = numNodes network
+        g = graph network
+
+        communicability' []       q = q
+        communicability' (s:rest) q =
+          -- by replacing (I - aA) with (I + aA) we can enforce only
+          -- on hop per time step (apparently)
+          let q' = q <> (inv $ (ident n) + (a*(toDense s))) in
+            communicability' rest $ q' / scalar (norm_2 q')
+
 -- | Compute the normalized communicability matrix.
 communicability :: InteractionNetwork -> Matrix Double
 communicability network =
   communicability' g (ident n)
   -- take a < 1 per Grindrod 2010
-  -- a = 0.01 seems like it should be sufficient for the teleportation model
-  where a = 0.01 -- XXX: a < 1/max (ρ(A[k])) for k in 1..length g
+  -- a = 0.1 seems sufficient for teleportation, brownian, and crw models
+  where a = 0.1 -- XXX: a < 1/max (ρ(A[k])) for k in 1..length g
         n = numNodes network
         g = graph network
 
