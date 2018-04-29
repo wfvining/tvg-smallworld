@@ -40,8 +40,8 @@ spectralRadius network = foldr (\s acc -> let rho = maxElement . cmap abs . eige
 
 -- minimum sr over all timesteps
 spectralRadius' :: InteractionNetwork -> Double
-spectralRadius' network = foldr (\s acc -> let rho = maxElement . cmap abs . eigenvaluesSH . trustSym $ toDense s in
-                                   if rho < acc then rho else acc) 0.0 (graph network)
+spectralRadius' network =
+  minimum $ map (maxElement . cmap abs . eigenvaluesSH . trustSym . toDense) (graph network)
 
 -- | Compute the normalized communicability matrix.
 communicability :: InteractionNetwork -> Matrix Double
