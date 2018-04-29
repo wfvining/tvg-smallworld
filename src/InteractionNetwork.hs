@@ -57,7 +57,8 @@ communicability network =
         communicability' []       q = q
         communicability' (s:rest) q =
           let q' = q <> (inv $ (ident n) - (a*(toDense s))) in
-            communicability' rest $ q' / scalar (norm_2 q')
+            -- communicability' rest $ q' / scalar (norm_2 q')
+            communicability' rest q'
 
 centralities :: InteractionNetwork -> (Vector Double, Vector Double)
 centralities network = (broadcastCentralities network q, receiveCentralities network q)
