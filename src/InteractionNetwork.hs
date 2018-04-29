@@ -9,7 +9,7 @@ module InteractionNetwork
   , spectralRadius
   , spectralRadius'
   , communicability
-  , oneHopCommunicability
+  , oneHopCentralities
   , InteractionNetwork(..)
   ) where
 
@@ -76,6 +76,10 @@ communicability network =
 centralities :: InteractionNetwork -> (Vector Double, Vector Double)
 centralities network = (broadcastCentralities network q, receiveCentralities network q)
   where q = communicability network
+
+oneHopCentralities :: InteractionNetwork -> (Vector Double, Vector Double)
+oneHopCentralities network = (broadcastCentralities network q, receiveCentralities network q)
+  where q = oneHopCommunicability network
 
 broadcastCentralities :: InteractionNetwork -> Matrix Double -> Vector Double
 broadcastCentralities network q =
