@@ -94,11 +94,11 @@ main = do
 
   let inet = getInteractionNetworkAfter 1000 (runModel 1.0 1500 model)
       temporalBST = allPairsBFS inet
-      cm = fromColumns . (\(a,b) -> a:b:[]) $ centralities inet
+      cm = fromColumns . (\(a,b) -> a:b:[]) $ oneHopCentralities inet
   -- putStrLn $ "TCC:  " ++ (show $ tcc inet)
   -- putStrLn $ "CTPL: " ++ (show $ ctpl inet temporalBST)
   -- putStrLn $ "TGE:  " ++ (show $ tge inet temporalBST)
   putStrLn $ "1/min sr: " ++ (show $ 1 / (spectralRadius' inet))
-  saveMatrix ("centralities_"++motionType++"-"++n++"-"++arena++"-"++fileNameExtra) "%f" cm
+  saveMatrix ("oneHopCentralities_"++motionType++"-"++n++"-"++arena++"-"++fileNameExtra) "%f" cm
   where commRange  = 5 -- From the Tang paper
         agentSpeed = 1
