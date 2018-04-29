@@ -8,7 +8,7 @@ module InteractionNetwork
   , allPairsBFS
   , spectralRadius
   , spectralRadius'
-  , communicability
+  , centralities
   , oneHopCentralities
   , InteractionNetwork(..)
   ) where
@@ -55,7 +55,7 @@ oneHopCommunicability network =
         communicability' (s:rest) q =
           -- by replacing (I - aA) with (I + aA) we can enforce only
           -- on hop per time step (apparently)
-          let q' = q <> (inv $ (ident n) + (a*(toDense s))) in
+          let q' = q <> ((ident n) + (a*(toDense s))) in
             communicability' rest $ q' / scalar (norm_2 q')
 
 -- | Compute the normalized communicability matrix.
