@@ -97,5 +97,17 @@ main = do
   putStrLn $ "TGE:  " ++ (show $ tge inet temporalBST)
   putStrLn $ "1/max ρ(·): " ++ (show $ 1 / (spectralRadius inet))
   putStrLn $ "1/min ρ(·): " ++ (show $ 1 / (spectralRadius' inet))
+
+  let fileNameExtra = case motionType of
+                        "teleport" -> "-" ++ (head rest)
+                        "crw"      -> "-" ++ (head rest)
+                        _ -> ""
+
+  let cm  = fromColumns . (\(a,b) -> a:b:[]) $ centralities inet
+      ocm = fromColumns . (\(a,b) -> a:b:[]) $ oneHopCentralities inet
+
+  saveMatrix ("centralities_"++motionType++"-"++n++"-"++arena++fileNameExtra) "%f" cm
+  saveMatrix ("oneHopCentralities_"++motionType++"-"++n++"-"++arena++fileNameExtra) "%f" ocm
+
   where commRange  = 5 -- From the Tang paper
         agentSpeed = 1

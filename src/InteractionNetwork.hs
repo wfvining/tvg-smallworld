@@ -8,7 +8,8 @@ module InteractionNetwork
   , allPairsBFS
   , spectralRadius
   , spectralRadius'
-  , communicability
+  , centralities
+  , oneHopCentralities
   , InteractionNetwork(..)
   ) where
 
@@ -40,16 +41,30 @@ spectralRadius network = foldr (\s acc -> let rho = maxElement . cmap abs . eige
 
 -- minimum sr over all timesteps
 spectralRadius' :: InteractionNetwork -> Double
-spectralRadius' network = foldr (\s acc -> let rho = maxElement . cmap abs . eigenvaluesSH . trustSym $ toDense s in
-                                   if rho < acc then rho else acc) 0.0 (graph network)
+spectralRadius' network =
+  minimum $ map (maxElement . cmap abs . eigenvaluesSH . trustSym . toDense) (graph network)
+
+oneHopCommunicability :: InteractionNetwork -> Matrix Double
+oneHopCommunicability network =
+  communicability' g (ident n)
+  where a = 0.1
+        n = numNodes network
+        g = graph network
+
+        communicability' []       q = q
+        communicability' (s:rest) q =
+          -- by replacing (I - aA) with (I + aA) we can enforce only
+          -- on hop per time step (apparently)
+          let q' = q <> ((ident n) + (a*(toDense s))) in
+            communicability' rest $ q' / scalar (norm_2 q')
 
 -- | Compute the normalized communicability matrix.
 communicability :: InteractionNetwork -> Matrix Double
 communicability network =
   communicability' g (ident n)
   -- take a < 1 per Grindrod 2010
-  -- a = 0.01 seems like it should be sufficient for the teleportation model
-  where a = 0.01 -- XXX: a < 1/max (ρ(A[k])) for k in 1..length g
+  -- a = 0.1 seems sufficient for teleportation, brownian, and crw models
+  where a = 0.1 -- XXX: a < 1/max (ρ(A[k])) for k in 1..length g
         n = numNodes network
         g = graph network
 
@@ -61,6 +76,10 @@ communicability network =
 centralities :: InteractionNetwork -> (Vector Double, Vector Double)
 centralities network = (broadcastCentralities network q, receiveCentralities network q)
   where q = communicability network
+
+oneHopCentralities :: InteractionNetwork -> (Vector Double, Vector Double)
+oneHopCentralities network = (broadcastCentralities network q, receiveCentralities network q)
+  where q = oneHopCommunicability network
 
 broadcastCentralities :: InteractionNetwork -> Matrix Double -> Vector Double
 broadcastCentralities network q =
