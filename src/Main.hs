@@ -22,6 +22,9 @@ crw :: Double -> Double -> Double
 crw h t = let x = h + t in
   if x >= 0 && x <= 2*pi then x else x - 2*pi*(fromIntegral $ floor (x / (2*pi)))
 
+powerLaw :: Double -> Double -> Double -> Double -> Double
+powerLaw min max n y = ((((max ** (n+1)) - (min ** (n+1))) * y) + (min ** (n+1))) ** (1/(n+1))
+
 -- angle of the ray from the origin to the point, measured from the x-axis
 direction :: Point -> Double
 -- define the direction for 0,0 to be 0
