@@ -7,6 +7,7 @@ module Model
   , headingStrategy
   , positionStrategy2
   , positionStrategy3
+  , velocityStrategy
   , identityStrategy
   , newModel
   , mapAgents
@@ -20,6 +21,8 @@ type Point = (Double, Double)
 -- a movement strategy returns a new heading and a new movement strategy
 data MovementStrategy = Heading (Agent -> (Double, MovementStrategy))
                       | Position (Agent -> (Point, MovementStrategy))
+                      | Velocity (Agent -> (Double, MovementStrategy))
+                      | Comp MovementStrategy MovementStrategy
                       | Identity
 
 type Initializer = (Int -> (Point, Double))
@@ -52,6 +55,9 @@ positionStrategy2 (s:s':state) f = Position (\a -> (f (position a) s s', positio
 positionStrategy3 :: [Double] -> (Point -> Double -> Double -> Double -> Point) -> MovementStrategy
 positionStrategy3 (s:s':s'':state) f = Position (\a -> (f (position a) s s' s'', positionStrategy3 state f))
 
+velocityStrategy :: [Double] -> (Double -> Double -> Double) -> MovementStrategy
+velocityStrategy (s:state) f = Velocity (\a -> (f (speed a) s, velocityStrategy state f))
+
 identityStrategy :: MovementStrategy
 identityStrategy = Identity
 
@@ -82,8 +88,12 @@ makeAgents speed init movement = [ let (position, heading) = init i in
 
 updateAgent :: Agent -> Agent
 updateAgent agent = case update agent of
+  Comp s1 s2 -> let a = updateAgent $ agent { update = s1 }
+                    a' = updateAgent $ a { update = s2 }
+                in a' { update = Comp (update a) (update a') }
   Heading f  -> let (heading', update') = f agent in agent { heading = heading', update = update' }
   Position f -> let (position', update') = f agent in agent { position = position', update = update' }
+  Velocity f -> let (speed', update') = f agent in agent { speed = speed', update = update' }
   Identity   -> agent
 
 -- reflect a unit vector across the x-axis returning the direction of

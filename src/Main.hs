@@ -22,6 +22,9 @@ crw :: Double -> Double -> Double
 crw h t = let x = h + t in
   if x >= 0 && x <= 2*pi then x else x - 2*pi*(fromIntegral $ floor (x / (2*pi)))
 
+levyWalk :: [Double] -> [Double] -> MovementStrategy
+levyWalk xs ys = Comp (velocityStrategy xs (\x y -> y)) (headingStrategy ys brownian)
+
 powerLaw :: Double -> Double -> Double -> Double -> Double
 powerLaw min max n y = ((((max ** (n+1)) - (min ** (n+1))) * y) + (min ** (n+1))) ** (1/(n+1))
 
@@ -68,6 +71,15 @@ crwModel arenaSize commRange agentSpeed sigma numAgents = do
    let turns = zipWith headingStrategy rs (repeat crw)
    return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
 
+levyModel :: Double -> Double -> Double -> Double -> Double -> Double -> Int -> IO Model
+levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents = do
+  gens  <- replicateM numAgents newStdGen
+  gens' <- replicateM numAgents newStdGen
+  let rs = map (randomRs (0, 2*pi)) gens
+      rs' = map (map (powerLaw minStep maxStep mu)) $ map (randomRs (0,1)) gens'
+      walks = zipWith levyWalk rs' rs
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) walks
+
 getInteractionNetwork :: [Model] -> InteractionNetwork
 getInteractionNetwork ts@(m:_) = interactionNetwork (numAgents m) $ map getInteractions ts
 
@@ -89,6 +101,9 @@ main = do
              "crw"      -> do
                let stdDev = read (head rest)
                crwModel arenaSize commRange agentSpeed stdDev numAgents
+             "levy"     -> do
+               let mu = read (head rest)
+               levyModel arenaSize commRange agentSpeed (-mu) 0.5 5 numAgents
 
   let inet = getInteractionNetworkAfter 1000 (runModel 1.0 1500 model)
       temporalBST = allPairsBFS inet
@@ -101,7 +116,8 @@ main = do
   let fileNameExtra = case motionType of
                         "teleport" -> "-" ++ (head rest)
                         "crw"      -> "-" ++ (head rest)
-                        _ -> ""
+                        "levy"     -> "-" ++ (head rest)
+                        "brownian" -> ""
 
   let cm  = fromColumns . (\(a,b) -> a:b:[]) $ centralities inet
       ocm = fromColumns . (\(a,b) -> a:b:[]) $ oneHopCentralities inet
