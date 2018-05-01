@@ -102,8 +102,11 @@ main = do
                let stdDev = read (head rest)
                crwModel arenaSize commRange agentSpeed stdDev numAgents
              "levy"     -> do
-               let mu = read (head rest)
-               levyModel arenaSize commRange agentSpeed (-mu) 0.5 5 numAgents
+               -- the extra parameter on the command line is 0 < alpha
+               -- <= 2 for alpha = 2 the PDF becomes gaussian, for
+               -- alpha = 1 The PDF is a Cauchy distribution.
+               let mu = (-1) - (read (head rest))
+               levyModel arenaSize commRange agentSpeed mu 1 5 numAgents
 
   let inet = getInteractionNetworkAfter 1000 (runModel 1.0 1500 model)
       temporalBST = allPairsBFS inet
