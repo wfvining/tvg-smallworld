@@ -14,7 +14,6 @@ month = {may},
 number = {5},
 pages = {055101},
 title = {{Small-world behavior in time-varying graphs}},
-url = {https://arxiv.org/pdf/0909.1712.pdf http://arxiv.org/abs/0909.1712{\%}0Ahttp://dx.doi.org/10.1103/PhysRevE.81.055101 https://link.aps.org/doi/10.1103/PhysRevE.81.055101},
 volume = {81},
 year = {2010}
 }
@@ -32,7 +31,6 @@ number = {4},
 pages = {046120},
 pmid = {21599253},
 title = {{Communicability across evolving networks}},
-url = {https://journals.aps.org/pre/pdf/10.1103/PhysRevE.83.046120 https://link.aps.org/doi/10.1103/PhysRevE.83.046120},
 volume = {83},
 year = {2011}
 }
@@ -43,7 +41,6 @@ arxivId = {cond-mat/9910332},
 author = {Barab{\'{a}}si, Albert L{\'{a}}szl{\'{o}} and Albert, R{\'{e}}ka},
 doi = {10.1126/science.286.5439.509},
 eprint = {9910332},
-file = {:home/wfvining/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Barab{\'{a}}si - 1999 - Emergence of Scaling in Random Networks.pdf:pdf},
 isbn = {1095-9203 (Electronic)$\backslash$n0036-8075 (Linking)},
 issn = {00368075},
 journal = {Science},
@@ -53,7 +50,6 @@ pages = {509--512},
 pmid = {10521342},
 primaryClass = {cond-mat},
 title = {{Emergence of scaling in random networks}},
-url = {http://www.sciencemag.org/cgi/content/full/286/5439/509 http://www.sciencemag.org/cgi/content/full/286/5439/509{\#}related-content http://www.sciencemag.org/cgi/content/full/286/5439/509{\#}otherarticles http://www.sciencemag.org/cgi/collection/physics},
 volume = {286},
 year = {1999}
 }
@@ -64,7 +60,6 @@ arxivId = {0803.0939v1},
 author = {Watts, Duncan J. and Strogatz, Steven H.},
 doi = {10.1038/30918},
 eprint = {0803.0939v1},
-file = {:home/wfvining/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Unknown - Unknown - full-text.pdf:pdf},
 isbn = {0028-0836},
 issn = {0028-0836},
 journal = {Nature},
@@ -74,7 +69,6 @@ number = {6684},
 pages = {440--442},
 pmid = {9623998},
 title = {{Collective dynamics of `small-world' networks}},
-url = {http://dx.doi.org/10.1038/30918{\%}5Cnhttp://www.nature.com/nature/journal/v393/n6684/abs/393440a0.html http://www.nature.com/articles/30918},
 volume = {393},
 year = {1998}
 }
@@ -95,4 +89,49 @@ year = {1998}
   volume={5},
   pages={17--61},
   year={1960}
+}
+
+@article{Clauset2007,
+abstract = {The topology of social networks can be understood as being inherently dynamic, with edges having a distinct position in time. Most characterizations of dynamic networks discretize time by converting temporal information into a sequence of network "snapshots" for further analysis. Here we study a highly resolved data set of a dynamic proximity network of 66 individuals. We show that the topology of this network evolves over a very broad distribution of time scales, that its behavior is characterized by strong periodicities driven by external calendar cycles, and that the conversion of inherently continuous-time data into a sequence of snapshots can produce highly biased estimates of network structure. We suggest that dynamic social networks exhibit a natural time scale $\backslash$Delta{\_}{\{}nat{\}}, and that the best conversion of such dynamic data to a discrete sequence of networks is done at this natural rate.},
+archivePrefix = {arXiv},
+arxivId = {1211.7343},
+author = {Clauset, Aaron and Eagle, Nathan},
+eprint = {1211.7343},
+file = {:home/wfvining/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Clauset, Eagle - Unknown - Persistence and periodicity in a dynamic proximity network.pdf:pdf},
+mendeley-groups = {Time Varying Graphs},
+title = {{Persistence and periodicity in a dynamic proximity network}},
+year = {2007},
+journal = {DIMACS Workshop on Computational Methods for Dynamic Interaction Networks},
+publisher = {DIMACS}
+}
+
+@article{Grindrod2014,
+abstract = {To gain insights about dynamic networks, the dominant paradigm is to study discrete snapshots, or timeslices, as the interactions evolve. Here, we develop and test a new mathematical framework where network evolution is handled over continuous time, giving an elegant dynamical systems representation for the important concept of node centrality. The resulting system allows us to track the relative influence of each individual. This new setting is natural in many digital applications, offering both conceptual and computational advantages. The novel differential equations approach is convenient for modelling and analysis of network evolution and gives rise to an interesting application of the matrix logarithm function. From a computational perspective, it avoids the awkward up-front compromises between accuracy, efficiency and redundancy required in the prevalent discrete-time setting. Instead, we can rely on state-of-the-art ODE software, where discretization takes place adaptively in response to the prevailing system dynamics. The new centrality system generalizes the widely used Katz measure, and allows us to identify and track, at any resolution, the most influential nodes in terms of broadcasting and receiving information through time-dependent links. In addition to the classical static network notion of attenuation across edges, the new ODE also allows for attenuation over time, as information becomes stale. This allows 'running measures' to be computed, so that networks can be monitored in real time over arbitrarily long intervals. With regard to computational efficiency, we explain why it is cheaper to track good receivers of information than good broadcasters. An important consequence is that the overall broadcast activity in the network can also be monitored efficiently. We use two synthetic examples to validate the relevance of the new measures. We then illustrate the ideas on a large-scale voice call network, where key features are discovered that are not evident from snapshots or aggregates. Systems involving transient interactions arise naturally in many areas, including telecommuni-cation, online social networking and neuroscience. Dealing with the inherent time-dependency of edges in a network raises a variety of challenges for modelling and computation [1,2]. Currently, the dominant paradigm is to consider activity over time-windows, and hence to deal with network snapshots over discrete time; for example, hourly or daily summaries of who phoned whom or who texted whom. This approach can be used to study both the evolution of the underlying connectivity and the dynamics of processes over the network [3–5]. The idea of viewing a dynamic network as a time-ordered sequence of sparse adjacency matrices is also extremely convenient for data-driven analysis [6–11]. More generally, abstracting from time to any countable index representing possible levels in a hierarchy (such as gene/mRNA/protein) we arrive at multiplex networks [12], which can also be viewed as multi-dimensional tensors [13,14]. However, owing to the bursty behaviour of human interactions [15] aggregating over pre-chosen time windows has a number of drawbacks. On the one hand, by taking the time window too large we lose the ability to reproduce high-frequency transient behaviour, where an edge switches on and off multiple times in the space of a single window. On the other hand, time points that are too finely spaced can lead to redundant, empty windows that waste computational effort. Very short time windows may also lead to a false impression of accuracy—for remote interactions such as e-mails and tweets, although there is an unambiguous and instantaneous time at which information was sent, the time at which the receiver (i) digests and then, possibly, (ii) acts upon the information is generally not recordable. Hence, although it is intuitively appealing owing to its simplicity, we believe that in many settings, notably the avalanches of human communication arising through digital media, the discrete snapshot view is unnatural and forces us to make unnecessary compromises. Our aim is therefore to overcome these conceptual and practical shortcomings by developing the first model to extract centrality insights directly from an adjacency matrix defined as a function of continuous time. We focus on the task of simulating with real dynamic network data. However, we note that by making available the tools of dynamical systems, this work also allows us to incorporate the concept of centrality into theoretical models of network evolution based, for example, on a law of social balance [16,17] or triadic closure [18]. Hence, while this work focuses on the key step of deriving the continuum limit and confirming its relevance on a real dataset, the ideas also open up the opportunity to study the evolution of centrality under various network 'laws of motion' and to compare predictions from competing models. In the next section, we summarize some relevant background material in static network centrality measures. In 3, we then set up and derive a differential equation for continuous-time network centrality. Section 4 continues with some observations about the extraction of node-level information, choice of parameters and extensions of the model. We illustrate the relevance of the new measures in 5 by testing on synthetically constructed dynamic networks that contain known hierarchies. Section 6 then applies the methodology to voice call interactions, showing that key features can be extracted. We finish in 7 with some conclusions. 2. Background on network centrality},
+author = {Grindrod, Peter and Higham, Desmond J},
+doi = {10.1098/rspa.2013.0835},
+file = {:home/wfvining/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Higham, Grindrod - 2014 - A dynamical systems view of network centrality.pdf:pdf},
+journal = {Proceedings of the Royal Society A},
+mendeley-groups = {Time Varying Graphs},
+number = {2165},
+title = {{A dynamical systems view of network centrality}},
+volume = {470},
+year = {2014}
+}
+
+@article{Pinter2013,
+  title={Harvester ants use interactions to regulate forager activation and availability},
+  author={Pinter-Wollman, Noa and Bala, Ashwin and Merrell, Andrew and Queirolo, Jovel and Stumpe, Martin C and Holmes, Susan and Gordon, Deborah M},
+  journal={Animal behaviour},
+  volume={86},
+  number={1},
+  pages={197},
+  year={2013},
+  publisher={NIH Public Access}
+}
+
+@book{Newman2010,
+  title={Networks: an introduction},
+  author={Newman, Mark},
+  year={2010},
+  publisher={Oxford university press}
 }

@@ -83,6 +83,7 @@
 
 % *** MATH PACKAGES ***
 %
+\usepackage{latexsym}
 \usepackage{amsmath}
 % A popular package from the American Mathematical Society that provides
 % many useful and powerful commands for dealing with mathematics.
@@ -213,6 +214,7 @@
 % correct bad hyphenation here
 %\hyphenation{op-tical net-works semi-conduc-tor}
 
+\newcommand{\adj}[1]{A^{[#1]}}
 
 \begin{document}
 \title{Small-World Behavior in Time-Varying Interaction Networks}
@@ -269,8 +271,175 @@ The abstract goes here.
 \IEEEpeerreviewmaketitle
 
 \section{Introduction}
+In many natural systems complex behavior emerges as a result of the
+interactions of large numbers independent agents. For example in ant
+colonies efficient paths to food are discovered by a single ant, and
+exploited by the entire colony. The knowledge of the food is passed to
+the rest of the ants either through direct interactions, or
+stygmergy. As another example, ant colonies modulate the rate at which
+they leave the nest to forage based on interactions with returning
+foragers~\cite{Pinter2013}. The interactions between agents (in this
+example ants) can be represented as a network where vertices are
+individual agents and edges are placed between agents that interact,
+or are in close enough proximity that they could interact. Such
+networks change on very rapid time-scales and at any given moment are
+extremely sparse. This paper investigates what role different types of
+random movement and different densities of agents can play in the
+structure of these networks. We establish what types of movement are
+most 
+
+Static or slow changing networks are well studied and exhibit many
+interesting phenomena. Notably the small-world phenomenon described by
+Watts and Storgatz~\cite{Watts1998} leads to short path lengths,
+despite the highly regular structure of the network. Because they are
+amenable to mathematical analysis networks provide an excellent model
+for studying phenomena such as interactions. Much of the research
+investigating networks is focused on the case of static or slowly
+growing networks (for example the model of preferential attachment of
+Barab\'asi and Albert~\cite{Barabasi1999}). Many complex systems,
+however, are best described by networks where edges are frequently
+being added and removed. This is the case for the example of ants
+given above, or even emerging technologies such as the internet of
+things. Recently some effort has been made to generalize the
+mathematical methods for analyzing static networks to apply them to
+dynamic networks. Of particular interest are measures of
+communicability described by Grindrod et al.~\cite{Grindrod2011} and
+the generalization of small-world behavior described
+by~\cite{Tang2010}.
+
+This paper applies these methods to the analysis of dynamic networks
+representing interactions between agents moving in a finite space. We
+aim to determine how the movement patterns impact the properties of
+the interaction network particularly in terms of how effectively
+agents can communicate. An improved understanding of these properties
+may be useful in the design of algorithms for robot swarms by
+characterizing the trade offs between movement strategies and the
+effectiveness with which information can be disseminated among members
+of the swarm. The following section presents relevant background on
+time-varying graphs and the mathematics used for the analysis in this
+paper. Following that we will present the experiments and results
+which show that particular movement types such as a correlated random
+walk have limited impact on communicability while other movement types
+can have a dramatic impact.
+
+\subsection{Background}
+The typical representation of a dynamic network is an ordered sequence
+of graphs each representing a snapshot of the structure of the network
+at a particular point in time. This structure is called a time-varying
+graph, an example of such a graph is shown in
+figure~\ref{fig:tvg}. This representation inherently coarse-grains the
+evolution of the network and can cause important structures to be
+masked or other bias to be introduced~\cite{Clauset2007}. Other
+researchers have studied dynamic network models in continuous time in
+order to address these biases, for example~\cite{Grindrod2014}. For the purposes of
+this paper, however, we are concerned only with discrete snapshots,
+and assume that the sampling frequency is on roughly the same scale as
+the rate at which messages can be exchanged between agents. It is
+important to note that in general a snapshot will not be
+connected. The only way a message can propagate from one vertex to
+another is through time, which can lead to an inherent asymmetry in
+paths: the existence of a path from $a \leadsto b$ does not imply that
+a path $b \leadsto a$ exists, even in the case where snapshots are not
+directed~\cite{Tang2010}.
+
+\begin{figure}
+  \includegraphics[width=\columnwidth]{tvg}
+  \caption{A time varying graph evolving over three time-steps.}
+  \label{fig:tvg}
+\end{figure}
+
+Tang et al~\cite{Tang2010} described a generalization of small-world
+behavior to dynamic networks. They used a metric developed by Clauset
+and Eagle~\cite{Clauset2007} to quantify the similarity of consecutive
+snapshots. The measure, called the \emph{temporal correlation
+  coefficient} (TCC), is given by
+\begin{equation}
+  C = \frac{1}{N}\sum_{i = 1}^N C_i, C_i = \frac{1}{T-1}\sum_{t=1}^{T-1} \frac{\sum_j A_{ij}^{[t]}A_{ij}^{[t+1]}}{\sqrt{(\sum_j A_{ij}^{[t]})(\sum_j A_{ij}^{[t+1]})}}.
+  \label{eq:tcc}
+\end{equation}
+Where $\adj{t}$ is the adjacency matrix of the snapshot at time $t$,
+$T$ is the number of snapshots, and $N$ is the number of agents. If
+one of the rows in $\adj{t}$ or $\adj{t+1}$ is entirely 0s then $C_i$
+is defined to be 1. This equation has the property that if every
+snapshot is identical then $C = 1$. The authors use a generalized
+version of breadth-first search to compute the all-pairs minimum path
+length. The generalized algorithm builds a frontier of discovered
+nodes by adding all adjacent, undiscovered, nodes in the current
+snapshot $\adj{t}$ to the frontier then moves to the next snapshot
+$\adj{t+1}$. This enforces the condition that only one edge can be
+traversed per time-step (we can allow multiple edges by inserting
+repeated copies of each snapshot). The temporal distance $d_{ij}$
+between $i$ and $j$ is $t$ if $j$ is discovered in snapshot $\adj{t}$
+when the search begins at $i$ in snapshot $\adj{1}$. Note that there
+are implicit self-loops in this model. A temporal path may consist of
+staying at the same node for many time-steps before the target node is
+discovered. The \emph{characteristic temporal path length} (CTPL) is
+then defined as
+\begin{equation}
+  L = \frac{1}{N-1} \sum_{ij}d_{ij}.
+  \label{eq:ctpl}
+\end{equation}
+In the case
+where no path from $i$ to $j$ exists, $d_{ij} = \infty$ and we exclude
+that path from the average. Using these two metrics Tang et al define
+small world behavior to be when a time-varying graph exhibits high
+temporal correlation ($C$) and low characteristic temporal path
+lengths ($L$).
+
+In addition to the equations above, Tang et al~\cite{Tang2010}
+presented a model for building interaction networks that we build on
+here. In the Tang et al model each agent moves with constant velocity
+in a fixed 100 by 100 meter space. With probability $p_j$ the agent is
+``teleported'' to another location in that space at each time-step. At
+each second a snapshot is created with an edge between any agents that
+are within 5 meters of each other (this is called the
+\emph{communication radius}). We expand on this model by changing the
+motion of the agents, as described in section~\ref{sec:methods}, to
+simulate a correlated random walk, Brownian motion and a L\'evy
+flight.
+
+We are not just interested in the structure of the network, but also
+in how effectively agents can communicate over that structure. In the
+static network setting a common measure of this is the centrality of
+each node. In particular we are interested in the Katz
+centrality~\cite{Newman2010} which measures the number of walks
+between each pair of node. Long walks are weighted less heavily than
+short walks corresponding to the idea that a message is likely to
+degrade the more times it is transmitted. Grindrod et
+al~\cite{Grindrod2011} generalized Katz centrality to apply it to
+walks in time varying graphs. This equation measures walks that use
+edges in a time-ordered sequence of adjacency matrices. Grindrod et
+al. note that, because it is non-commutative, measures based on matrix
+multiplications are well suited to analyzing time-varying graphs since
+they implicitly preserve the ``arrow of time.'' The generalized Katz
+centrality is given the following equation
+\begin{equation}
+  Q = \prod_{t = 1}^T(I - \alpha \adj{t})^{-1}.
+  \label{eq:q}
+\end{equation}
+$Q$ is referred to as the \emph{communicability matrix} and its
+row-sums and column-sums tell us how effectively each node can
+broadcast or receive a message respectively. The walks counted by $Q$
+include those which use arbitrarily many edges from each snapshot
+which is not what we are interested in for the purposes of this
+paper. The authors present another matrix multiplication
+(equation~\ref{eq:qoh}) that computes the same metric, but limits the
+number of edges that can be traversed in each snapshot to 1.
+\begin{equation}
+  Q^{onehop} = \prod_{t = 1}^T(I + \alpha \adj{t})
+  \label{eq:qoh}
+\end{equation}
+
+The remainder of this paper describes the extensions to the
+agent-based model of Tang et al~\cite{Tang2010} and the evaluation of
+the resulting interaction networks. We then discuss the implications
+of these results for the design of distributed algorithms for robotic
+swarms.
 
 \section{Methods}
+\label{sec:methods}
+
+The interaction networks that are analyzed below were generated by a
 
 \section{Results}
 
@@ -375,7 +544,7 @@ The abstract goes here.
 
 % use section* for acknowledgment
 \section*{Author Contributions}
-WV did everything.
+WV conceived of and executed the research. WV wrote the paper.
 
 % trigger a \newpage just before the given reference
 % number - used to balance the columns on the last page
