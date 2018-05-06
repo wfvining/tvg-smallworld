@@ -24,3 +24,17 @@ executable tvg-smallworld
                      , hmatrix >= 0.16
                      , containers
                      , normaldistribution >= 1.1
+
+executable tvg-viz
+  hs-source-dirs:      src
+  main-is:             Visualization.hs
+  other-modules:       Model
+                     , InteractionNetwork
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                     , random
+                     , hmatrix >= 0.16
+                     , containers
+                     , normaldistribution >= 1.1
+                     , gloss
+                       
