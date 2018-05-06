@@ -14,7 +14,16 @@ module Model
   , getInteractions
   , stepModel
   , runModel
+  , levyModel
+  , crwModel
+  , brownianModel
+  , teleportationModel
+  , distance
   ) where
+
+import Control.Monad
+import System.Random
+import Data.Random.Normal
 
 type Point = (Double, Double)
 
@@ -41,6 +50,8 @@ data Model = Model { agents :: [Agent] -- list of agents
                    , size   :: Double  -- bounds of the arena
                    , range  :: Double  -- communication range of the agents
                    , numAgents :: Int  -- number of agents
+                   , time   :: Double
+                   , nextUpdate :: Double
                    }
 
 headingStrategy :: [Double] -> (Double -> Double -> Double) -> MovementStrategy
@@ -68,10 +79,12 @@ newModel :: Double
          -> [MovementStrategy]
          -> Model
 newModel size range speed init strategies =
-  Model { agents = makeAgents speed init strategies
-        , size   = size/2
-        , range  = range
-        , numAgents = length strategies
+  Model { agents     = makeAgents speed init strategies
+        , size       = size/2
+        , range      = range
+        , numAgents  = length strategies
+        , time       = 0
+        , nextUpdate = 0
         }
 
 makeAgents :: Double
@@ -85,6 +98,74 @@ makeAgents speed init movement = [ let (position, heading) = init i in
                                                 , heading  = heading
                                                 , update   = strat }
                                       | (i, strat) <- zip [0..] movement ]
+
+teleport :: Double -> Double -> Double -> (Point -> Double -> Double -> Double -> Point)
+teleport p w h = (\c p' x y -> if p' < p then (w*(x - 0.5), h*(y - 0.5)) else c)
+
+brownian :: Double -> Double -> Double
+brownian _ = id
+
+crw :: Double -> Double -> Double
+crw h t = let x = h + t in
+  if x >= 0 && x <= 2*pi then x else x - 2*pi*(fromIntegral $ floor (x / (2*pi)))
+
+levyWalk :: [Double] -> [Double] -> MovementStrategy
+levyWalk xs ys = Comp (velocityStrategy xs (\x y -> y)) (headingStrategy ys brownian)
+
+powerLaw :: Double -> Double -> Double -> Double -> Double
+powerLaw min max n y = ((((max ** (n+1)) - (min ** (n+1))) * y) + (min ** (n+1))) ** (1/(n+1))
+
+-- angle of the ray from the origin to the point, measured from the x-axis
+direction :: Point -> Double
+-- define the direction for 0,0 to be 0
+direction (0, 0) = 0
+direction (x, y) =
+  if x < 0
+  then pi + theta
+  else if y < 0
+       then (2*pi) + theta
+       else theta
+  where theta = atan (y / x)
+
+initRectangle :: Int -> Int -> Initializer
+initRectangle dimensionX dimensionY =
+  (\agentID -> let position@(x,y) = (fromIntegral $ upperLeftX + (agentID `div` dimensionX),
+                                     fromIntegral $ upperLeftY - (agentID `rem` dimensionX)) in
+                 (position, direction position))
+  where upperLeftX = -(dimensionX `div` 2)
+        upperLeftY = dimensionY `div` 2
+
+initSquare :: Int -> Initializer
+initSquare dimension = initRectangle dimension dimension
+
+teleportationModel :: Double -> Double -> Double -> Double -> Int -> IO Model
+teleportationModel arenaSize commRange agentSpeed p numAgents = do
+  gens <- replicateM numAgents newStdGen
+  let rs             = map (randomRs (1,0::Double)) gens
+      teleportations = (zipWith positionStrategy3 rs (repeat (teleport p arenaSize arenaSize)))
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) teleportations
+
+brownianModel :: Double -> Double -> Double -> Int -> IO Model
+brownianModel arenaSize commRange agentSpeed numAgents = do
+  gens <- replicateM numAgents newStdGen
+  let rs = map (randomRs (0, 2*pi)) gens
+      turns = zipWith headingStrategy rs (repeat brownian)
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
+
+crwModel :: Double -> Double -> Double -> Double -> Int -> IO Model
+crwModel arenaSize commRange agentSpeed sigma numAgents = do
+   rs <- replicateM numAgents (normalsIO' (0.0, sigma))
+   let turns = zipWith headingStrategy rs (repeat crw)
+   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
+
+levyModel :: Double -> Double -> Double -> Double -> Double -> Double -> Int -> IO Model
+levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents = do
+  gens  <- replicateM numAgents newStdGen
+  gens' <- replicateM numAgents newStdGen
+  let rs = map (randomRs (0, 2*pi)) gens
+      rs' = map (map (powerLaw minStep maxStep mu)) $ map (randomRs (0,1)) gens'
+      walks = zipWith levyWalk rs' rs
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) walks
 
 updateAgent :: Agent -> Agent
 updateAgent agent = case update agent of
@@ -113,8 +194,20 @@ reflectY direction =
   in if (-x) < 0 then theta + pi else if y < 0 then theta + (2*pi) else theta
 
 stepModel :: Double -> Model -> Model
-stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
-  where xMax = size m
+stepModel stepSize m = m { time = time'
+                         , nextUpdate = nextUpdate'
+                         , agents = agents' }
+  where agents' = if time' >= (nextUpdate m)
+                  then map (updateAgent . moveAgent) $ agents m
+                  else map moveAgent $ agents m
+
+        nextUpdate' = if time' >= (nextUpdate m)
+                      then fromIntegral $ ceiling time'
+                      else nextUpdate m
+
+        time' = time m + stepSize
+
+        xMax = size m
         yMax = size m
         xMin = -(size m)
         yMin = -(size m)
@@ -159,11 +252,13 @@ stepModel stepSize m = m { agents = map (updateAgent . moveAgent) $ agents m }
 runModel :: Double -> Int -> Model -> [Model]
 runModel stepSize steps = take steps . iterate (stepModel stepSize)
 
+distance :: Point -> Point -> Double
+distance (x1, y1) (x2, y2) = sqrt ((x1 - x2)^2 + (y1 - y2)^2)
+
 getInteractions :: Model -> [(Int,Int)]
 getInteractions m =
   [ (agentID a1, agentID a2) | a1 <- agents m, a2 <- agents m, distance (position a1) (position a2) < d, a1 /= a2]
   where d = range m
-        distance (x1, y1) (x2, y2) = sqrt ((x1 - x2)^2 + (y1 - y2)^2)
 
 mapAgents :: (Agent -> a) -> Model -> [a]
 mapAgents f m = map f (agents m)
