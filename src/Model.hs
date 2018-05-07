@@ -4,6 +4,7 @@ module Model
   , MovementStrategy(..)
   , Initializer(..)
   , Point(..)
+  , AgentColor(..)
   , headingStrategy
   , positionStrategy2
   , positionStrategy3
@@ -36,11 +37,14 @@ data MovementStrategy = Heading (Agent -> (Double, MovementStrategy))
 
 type Initializer = (Int -> (Point, Double))
 
+data AgentColor = Red | Green | Blue | White
+
 data Agent = Agent { agentID  :: Int
                    , position :: Point
                    , speed    :: Double
                    , heading  :: Double
                    , update   :: MovementStrategy
+                   , state    :: AgentColor
                    }
 
 instance Eq Agent where
@@ -96,7 +100,8 @@ makeAgents speed init movement = [ let (position, heading) = init i in
                                                 , position = position
                                                 , speed    = speed
                                                 , heading  = heading
-                                                , update   = strat }
+                                                , update   = strat
+                                                , state    = White }
                                       | (i, strat) <- zip [0..] movement ]
 
 teleport :: Double -> Double -> Double -> (Point -> Double -> Double -> Double -> Point)

@@ -10,18 +10,23 @@ vizScale = 4
 
 modelToPicture :: Model -> Picture
 modelToPicture m =
-  let agentPositions = mapAgents position m in
+  let agentInfo = mapAgents (\a -> (position a, agentColor a)) m in
     pictures $ [ let pf = toFloatPoint p
                      pf' = toFloatPoint p' in
-                   color white $ line [pf,pf'] | p <- agentPositions
-                                               , p' <- agentPositions
+                   color (greyN 0.3) $ line [pf,pf'] | (p, _) <- agentInfo
+                                               , (p', _) <- agentInfo
                                                , distance p p' < (range m)
                                                , p /= p' ]
                ++ [ translate (realToFrac $ x*(fromIntegral vizScale)) (realToFrac $ y*(fromIntegral vizScale))
-                    $ color red $ circleSolid 2 | (x, y) <- agentPositions]
-               ++ [ color cyan $ lineLoop $ rectanglePath s s ] ++ [ translate (-s/2) ((s/2) + 5) $ scale 0.2 0.2  $ color white $ text $ show (time m) ]
+                    $ c $ circleSolid 3 | ((x, y), c) <- agentInfo]
+               ++ [ color white $ lineLoop $ rectanglePath s s ] ++ [ translate (-s/2) ((s/2) + 5) $ scale 0.2 0.2  $ color white $ text $ show (time m) ]
   where toFloatPoint (x, y) = (realToFrac (x * fromIntegral vizScale), realToFrac (y * fromIntegral vizScale))
         s = 2 * (realToFrac $ (fromIntegral vizScale) * (size m))
+        agentColor a = color $ case state a of
+                                 White -> white
+                                 Red   -> red
+                                 Green -> green
+                                 Blue  -> light blue
 
 main :: IO ()
 main = do
