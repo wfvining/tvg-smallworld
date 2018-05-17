@@ -32,7 +32,6 @@ data MovementStrategy = Heading (Agent -> (Double, MovementStrategy))
                       | Position (Agent -> (Point, MovementStrategy))
                       | Velocity (Agent -> (Double, MovementStrategy))
                       | Comp MovementStrategy MovementStrategy
-                      | Cond (Agent -> Bool) (Agent -> ((Agent -> Bool), MovementStrategy
                       | Identity
 
 type Initializer = (Int -> (Point, Double))
@@ -170,12 +169,6 @@ levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents = do
 
 updateAgent :: Agent -> Agent
 updateAgent agent = case update agent of
-  Cond p f s -> if p a
-                then
-                  let a  = updateAgent $ agent { update = s }
-                      (p', f') = f a
-                  in a { update = Cond p' (f') (update a) }
-                else agent
   Comp s1 s2 -> let a = updateAgent $ agent { update = s1 }
                     a' = updateAgent $ a { update = s2 }
                 in a' { update = Comp (update a) (update a') }
