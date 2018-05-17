@@ -31,6 +31,7 @@ type Point = (Double, Double)
 data MovementStrategy = Heading (Agent -> (Double, MovementStrategy))
                       | Position (Agent -> (Point, MovementStrategy))
                       | Velocity (Agent -> (Double, MovementStrategy))
+                      | Condition (Agent -> (Point -> Bool, MovementStrategy))
                       | Comp MovementStrategy MovementStrategy
                       | Identity
 
@@ -41,6 +42,7 @@ data Agent = Agent { agentID  :: Int
                    , speed    :: Double
                    , heading  :: Double
                    , update   :: MovementStrategy
+                   , condition:: Point -> Bool
                    }
 
 instance Eq Agent where
@@ -68,6 +70,10 @@ positionStrategy3 (s:s':s'':state) f = Position (\a -> (f (position a) s s' s'',
 
 velocityStrategy :: [Double] -> (Double -> Double -> Double) -> MovementStrategy
 velocityStrategy (s:state) f = Velocity (\a -> (f (speed a) s, velocityStrategy state f))
+
+conditionStrategy :: [Double] -> (Point -> Double -> Double -> Point) -> MovementStrategy
+conditionStrategy (s:state) f = Condition (\a -> let t = f (position a) (heading a) s
+                                                 in ((\p -> distance p t < 0.1), conditionStrategy state f))
 
 identityStrategy :: MovementStrategy
 identityStrategy = Identity
