@@ -34,6 +34,7 @@ type Point = (Double, Double)
 data MovementStrategy = Heading (Agent -> (Double, MovementStrategy))
                       | Position (Agent -> (Point, MovementStrategy))
                       | Velocity (Agent -> (Double, MovementStrategy))
+                      | Condition (Agent -> (Point -> Bool, MovementStrategy))
                       | Comp MovementStrategy MovementStrategy
                       | Identity
 
@@ -47,6 +48,7 @@ data Agent = Agent { agentID  :: Int
                    , heading  :: Double
                    , update   :: MovementStrategy
                    , state    :: AgentColor
+                   , condition:: Point -> Bool
                    }
 
 instance Ord Agent where
@@ -61,6 +63,7 @@ data Model = Model { agents :: [Agent] -- list of agents
                    , numAgents :: Int  -- number of agents
                    , time   :: Double
                    , nextUpdate :: Double
+                   , conditionalUpdates :: Bool
                    }
 
 headingStrategy :: [Double] -> (Double -> Double -> Double) -> MovementStrategy
@@ -78,35 +81,91 @@ positionStrategy3 (s:s':s'':state) f = Position (\a -> (f (position a) s s' s'',
 velocityStrategy :: [Double] -> (Double -> Double -> Double) -> MovementStrategy
 velocityStrategy (s:state) f = Velocity (\a -> (f (speed a) s, velocityStrategy state f))
 
+conditionStrategy :: [Double] -> (Point -> Double -> Double -> Point) -> MovementStrategy
+conditionStrategy (s:state) f = Condition (\a -> let p = position a
+                                                 in ((\p' -> distance p' p >= s), conditionStrategy state f))
+
 identityStrategy :: MovementStrategy
 identityStrategy = Identity
+
+pointOnHeading :: Double -> Point -> Double -> Double -> Point
+pointOnHeading size p heading distance = let x = distance * cos heading
+                                             y = distance * sin heading
+                                         in reflect (x, y) heading
+  where reflect (x,y) heading
+          | (x < maxCoord) && (x > minCoord) && (y < maxCoord) && (y > minCoord) = (x, y)
+          | otherwise = let (p, h) = bounce x y heading in reflect p h
+
+        minCoord = -(size / 2)
+        maxCoord = (size / 2)
+
+        xMin = minCoord
+        yMin = minCoord
+        xMax = maxCoord
+        yMax = maxCoord
+
+        bounce :: Double -> Double -> Double -> (Point, Double)
+        bounce heading x y
+          | x > xMax && y > yMax =
+            let heading' = reflectX heading
+                heading'' = reflectY heading'
+            in
+              ((x - 2 * (x - xMax), y - 2 * (y - yMax)), heading'')
+          | x < xMin && y < yMin =
+            let heading'  = reflectX heading
+                heading'' = reflectY heading'
+            in
+              ((x - 2 * (x - xMin), y - 2 * (y - yMin)), heading'')
+          | x > xMax && y < yMin =
+            let heading'  = reflectX heading
+                heading'' = reflectY heading'
+            in
+              ((x - 2 * (x - xMax), y - 2 * (y - yMin)), heading'')
+          | x < xMin && y > yMax =
+            let heading'  = reflectX heading
+                heading'' = reflectY heading'
+            in
+              ((x - 2 * (x - xMin), y - 2 * (y - yMax)), heading'')
+          | x < xMin             = ((x - 2 * (x - xMin), y), reflectY heading)
+          | x > xMax             = ((x - 2 * (x - xMax), y), reflectY heading)
+          | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
+          | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
+          | otherwise            = ((x, y), heading)
 
 newModel :: Double
          -> Double
          -> Double
          -> Initializer
          -> [MovementStrategy]
+         -> (Point -> Bool)
+         -> Bool
          -> Model
-newModel size range speed init strategies =
-  Model { agents     = makeAgents speed init strategies
+newModel size range speed init strategies cond csStrat =
+  Model { agents     = makeAgents speed init strategies cond
         , size       = size/2
         , range      = range
         , numAgents  = length strategies
         , time       = 0
         , nextUpdate = 0
+        , conditionalUpdates = csStrat
         }
+
+alwaysUpdate :: Point -> Bool
+alwaysUpdate _ = True
 
 makeAgents :: Double
            -> Initializer
            -> [MovementStrategy]
+           -> (Point -> Bool)
            -> [Agent]
-makeAgents speed init movement = [ let (position, heading) = init i in
+makeAgents speed init movement cond = [ let (position, heading) = init i in
                                           Agent { agentID  = i
                                                 , position = position
                                                 , speed    = speed
                                                 , heading  = heading
                                                 , update   = strat
-                                                , state    = White }
+                                                , state    = White
+                                                , condition = cond }
                                       | (i, strat) <- zip [0..] movement ]
 
 teleport :: Double -> Double -> Double -> (Point -> Double -> Double -> Double -> Point)
@@ -121,6 +180,9 @@ crw h t = let x = h + t in
 
 levyWalk :: [Double] -> [Double] -> MovementStrategy
 levyWalk xs ys = Comp (velocityStrategy xs (\x y -> y)) (headingStrategy ys brownian)
+
+levyWalkCV :: Double -> [Double] -> [Double] -> MovementStrategy
+levyWalkCV size xs ys = Comp (headingStrategy ys brownian) (conditionStrategy xs (pointOnHeading size))
 
 powerLaw :: Double -> Double -> Double -> Double -> Double
 powerLaw min max n y = ((((max ** (n+1)) - (min ** (n+1))) * y) + (min ** (n+1))) ** (1/(n+1))
@@ -153,20 +215,20 @@ teleportationModel arenaSize commRange agentSpeed p numAgents = do
   gens <- replicateM numAgents newStdGen
   let rs             = map (randomRs (1,0::Double)) gens
       teleportations = (zipWith positionStrategy3 rs (repeat (teleport p arenaSize arenaSize)))
-  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) teleportations
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) teleportations alwaysUpdate False
 
 brownianModel :: Double -> Double -> Double -> Int -> IO Model
 brownianModel arenaSize commRange agentSpeed numAgents = do
   gens <- replicateM numAgents newStdGen
   let rs = map (randomRs (0, 2*pi)) gens
       turns = zipWith headingStrategy rs (repeat brownian)
-  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns alwaysUpdate False
 
 crwModel :: Double -> Double -> Double -> Double -> Int -> IO Model
 crwModel arenaSize commRange agentSpeed sigma numAgents = do
    rs <- replicateM numAgents (normalsIO' (0.0, sigma))
    let turns = zipWith headingStrategy rs (repeat crw)
-   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns
+   return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) turns alwaysUpdate False
 
 levyModel :: Double -> Double -> Double -> Double -> Double -> Double -> Int -> IO Model
 levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents = do
@@ -174,18 +236,22 @@ levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents = do
   gens' <- replicateM numAgents newStdGen
   let rs = map (randomRs (0, 2*pi)) gens
       rs' = map (map (powerLaw minStep maxStep mu)) $ map (randomRs (0,1)) gens'
-      walks = zipWith levyWalk rs' rs
-  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) walks
+      walks = zipWith (levyWalkCV arenaSize) rs' rs
+  return $ newModel arenaSize commRange agentSpeed (initSquare (ceiling . sqrt $ fromIntegral numAgents)) walks alwaysUpdate True
 
 updateAgent :: Agent -> Agent
-updateAgent agent = case update agent of
-  Comp s1 s2 -> let a = updateAgent $ agent { update = s1 }
-                    a' = updateAgent $ a { update = s2 }
-                in a' { update = Comp (update a) (update a') }
-  Heading f  -> let (heading', update') = f agent in agent { heading = heading', update = update' }
-  Position f -> let (position', update') = f agent in agent { position = position', update = update' }
-  Velocity f -> let (speed', update') = f agent in agent { speed = speed', update = update' }
-  Identity   -> agent
+updateAgent agent
+  | (condition agent) $ position agent = 
+    case update agent of
+        Comp s1 s2 -> let a = updateAgent $ agent { update = s1 }
+                          a' = updateAgent $ a { update = s2 }
+                      in a' { update = Comp (update a) (update a') }
+        Heading f  -> let (heading', update') = f agent in agent { heading = heading', update = update' }
+        Position f -> let (position', update') = f agent in agent { position = position', update = update' }
+        Velocity f -> let (speed', update') = f agent in agent { speed = speed', update = update' }
+        Condition f -> let (cond', update') = f agent in agent { condition = cond', update = update' }
+        Identity   -> agent
+  | otherwise = agent
 
 -- reflect a unit vector across the x-axis returning the direction of
 -- the resulting vector
@@ -207,8 +273,8 @@ stepModel :: Double -> Model -> Model
 stepModel stepSize m = m { time = time'
                          , nextUpdate = nextUpdate'
                          , agents = agents' }
-  where agents' = if time' >= (nextUpdate m)
-                  then map (updateAgent . moveAgent) $ agents $ updateState m
+  where agents' = if time' >= (nextUpdate m) || conditionalUpdates m
+                  then map (updateAgent . moveAgent) $ agents $ if time' >= (nextUpdate m) then updateState m else m
                   else map moveAgent $ agents m
 
         nextUpdate' = if time' >= (nextUpdate m)
