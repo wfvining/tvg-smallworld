@@ -20,11 +20,13 @@ module Model
   , brownianModel
   , teleportationModel
   , distance
+  , setState
   ) where
 
 import Control.Monad
 import System.Random
 import Data.Random.Normal
+import Data.List
 
 type Point = (Double, Double)
 
@@ -37,7 +39,7 @@ data MovementStrategy = Heading (Agent -> (Double, MovementStrategy))
 
 type Initializer = (Int -> (Point, Double))
 
-data AgentColor = Red | Green | Blue | White
+data AgentColor = Red | Green | Blue | White deriving Eq
 
 data Agent = Agent { agentID  :: Int
                    , position :: Point
@@ -46,6 +48,9 @@ data Agent = Agent { agentID  :: Int
                    , update   :: MovementStrategy
                    , state    :: AgentColor
                    }
+
+instance Ord Agent where
+  a1 <= a2 = agentID a1 <= agentID a2
 
 instance Eq Agent where
   a1 == a2 = agentID a1 == agentID a2
@@ -203,7 +208,7 @@ stepModel stepSize m = m { time = time'
                          , nextUpdate = nextUpdate'
                          , agents = agents' }
   where agents' = if time' >= (nextUpdate m)
-                  then map (updateAgent . moveAgent) $ agents m
+                  then map (updateAgent . moveAgent) $ agents $ updateState m
                   else map moveAgent $ agents m
 
         nextUpdate' = if time' >= (nextUpdate m)
@@ -264,6 +269,23 @@ getInteractions :: Model -> [(Int,Int)]
 getInteractions m =
   [ (agentID a1, agentID a2) | a1 <- agents m, a2 <- agents m, distance (position a1) (position a2) < d, a1 /= a2]
   where d = range m
+
+-- only transition from white to red
+--                      red   to blue
+--                      blue  to green
+--                      green to white
+updateState :: Model -> Model
+updateState m = let interactions = getInteractions m in spreadState m interactions
+  where spreadState m' [] = m'
+        spreadState m' ((a,a'):rest) = if getState m a == Red then spreadState (setState m' Red a') rest else spreadState m' rest
+
+getState :: Model -> Int -> AgentColor
+getState m agent = getState' (agents m)
+  where getState' [] = error "no such agent"
+        getState' (a:rest) = if agentID a == agent then state a else getState' rest
+
+setState :: Model -> AgentColor -> Int -> Model
+setState m c agent = m { agents = [ if agentID a /= agent then a else a { state = c } | a <- agents m ] }
 
 mapAgents :: (Agent -> a) -> Model -> [a]
 mapAgents f m = map f (agents m)
