@@ -13,13 +13,13 @@ modelToPicture m =
   let agentPositions = mapAgents position m in
     pictures $ [ let pf = toFloatPoint p
                      pf' = toFloatPoint p' in
-                   color white $ line [pf,pf'] | p <- agentPositions
+                   color (greyN 0.5) $ line [pf,pf'] | p <- agentPositions
                                                , p' <- agentPositions
                                                , distance p p' < (range m)
                                                , p /= p' ]
                ++ [ translate (realToFrac $ x*(fromIntegral vizScale)) (realToFrac $ y*(fromIntegral vizScale))
-                    $ color red $ circleSolid 2 | (x, y) <- agentPositions]
-               ++ [ color cyan $ lineLoop $ rectanglePath s s ] ++ [ translate (-s/2) ((s/2) + 5) $ scale 0.2 0.2  $ color white $ text $ show (time m) ]
+                    $ color black $ circleSolid 2 | (x, y) <- agentPositions]
+               ++ [ color black $ lineLoop $ rectanglePath s s ] ++ [ translate (-s/2) ((s/2) + 5) $ scale 0.2 0.2  $ color black $ text $ show (time m) ]
   where toFloatPoint (x, y) = (realToFrac (x * fromIntegral vizScale), realToFrac (y * fromIntegral vizScale))
         s = 2 * (realToFrac $ (fromIntegral vizScale) * (size m))
 
@@ -52,7 +52,7 @@ main = do
         update _ s = stepModel (realToFrac $ speedup * s)
         window     = InWindow "INet" (60 + (vizScale * 100), 60 + (vizScale * 100)) (10,10)
         fps        = 60
-        background = black
+        background = white
         commRange  = 5
         agentSpeed = 1.0
   
