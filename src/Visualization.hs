@@ -41,7 +41,7 @@ main = do
                     "home"     -> do
                       let stdDev = read (head rest)
                           p = read (head $ tail rest)
-                      homingModel arenaSize commRange agentSpeed p stdDev numAgents identityUpdate
+                      homingModel arenaSize commRange agentSpeed p stdDev numAgents simpleMajority
                     "levy"     -> do
                       -- the extra parameter on the command line is 0 < alpha
                       -- <= 2 for alpha = 2 the PDF becomes gaussian, for

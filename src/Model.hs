@@ -56,6 +56,11 @@ data Model = Model { agents     :: [Agent] -- list of agents
                    , move       :: !MovementRule
                    }
 
+simpleMajority :: UpdateRule
+simpleMajority states a = if (length $ filter (==Black) ((state a):states)) > (length states) `div` 2
+                          then a { state = Black }
+                          else a { state = White }
+
 identityUpdate :: UpdateRule
 identityUpdate _ a = a
 
@@ -287,7 +292,8 @@ stepModel stepSize m = m { time = time'
                          , nextUpdate = nextUpdate'
                          , agents = agents' }
   where agents' = if time' >= (nextUpdate m)
-                  then mapAgents ((move m) . moveAgent) m
+                  then let m' = m { agents = mapAgents ((move m) . moveAgent) m } in
+                         mapAgents (updateState m') m'
                   else mapAgents moveAgent m
 
         nextUpdate' = if time' >= (nextUpdate m)
@@ -295,6 +301,9 @@ stepModel stepSize m = m { time = time'
                       else nextUpdate m
 
         time' = time m + stepSize
+
+        updateState :: Model -> Agent -> Agent
+        updateState m a = (update m) (getNeighborState m a) a
 
         xMax = size m
         yMax = size m
@@ -347,6 +356,10 @@ distance (x1, y1) (x2, y2) = sqrt ((x1 - x2)^2 + (y1 - y2)^2)
 getInteractions :: Model -> [(Int,Int)]
 getInteractions m =
   [ (agentID a1, agentID a2) | a1 <- agents m, a2 <- agents m, distance (position a1) (position a2) < d, a1 /= a2]
+  where d = range m
+
+getNeighborState :: Model -> Agent -> [AgentState]
+getNeighborState m a = [ state n | n <- agents m, distance (position a) (position n) < d, a /= n ]
   where d = range m
 
 mapAgents :: (Agent -> a) -> Model -> [a]
