@@ -22,12 +22,12 @@ main = do
   model <- case motionType of
              "teleport" -> do
                let p = read (head rest)
-               teleportationModel arenaSize commRange agentSpeed p numAgents
-             "brownian" -> do
-               brownianModel arenaSize commRange agentSpeed numAgents
+               teleportationModel arenaSize commRange agentSpeed p numAgents identityUpdate
+             "uniform" -> do
+               uniformModel arenaSize commRange agentSpeed numAgents identityUpdate
              "crw"      -> do
                let stdDev = read (head rest)
-               crwModel arenaSize commRange agentSpeed stdDev numAgents
+               crwModel arenaSize commRange agentSpeed stdDev numAgents identityUpdate
              "levy"     -> do
                -- the extra parameter on the command line is 0 < alpha
                -- <= 2 for alpha = 2 the PDF becomes gaussian, for
@@ -35,7 +35,7 @@ main = do
                let [m,r] = rest
                    mu = (-1) - (read m)
                    maxJump = read r
-               levyModel arenaSize commRange agentSpeed mu 1 maxJump numAgents
+               levyModel arenaSize commRange agentSpeed mu 1 maxJump numAgents identityUpdate
 
   let inet = getInteractionNetworkAfter 1000 (runModel 1.0 1500 model)
       temporalBST = allPairsBFS inet

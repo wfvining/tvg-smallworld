@@ -19,7 +19,7 @@ modelToPicture m =
                                                , p /= p' ]
                ++ [ translate (realToFrac $ x*(fromIntegral vizScale)) (realToFrac $ y*(fromIntegral vizScale))
                     $ color black $ circleSolid 2 | (x, y) <- agentPositions]
-               ++ [ color black $ lineLoop $ rectanglePath s s ] ++ [ translate (-s/2) ((s/2) + 5) $ scale 0.2 0.2  $ color black $ text $ show (time m) ]
+               ++ [ color black $ lineLoop $ rectanglePath s s ] ++ [ translate (-s/2) ((s/2) + 5) $ scale 0.2 0.2  $ color black $ text $ show (time m), color (greyN 0.7) $ circleSolid (0.5 * fromIntegral vizScale) ]
   where toFloatPoint (x, y) = (realToFrac (x * fromIntegral vizScale), realToFrac (y * fromIntegral vizScale))
         s = 2 * (realToFrac $ (fromIntegral vizScale) * (size m))
 
@@ -32,12 +32,16 @@ main = do
   initialModel <- case motionType of
                     "teleport" -> do
                       let p = read (head rest)
-                      teleportationModel arenaSize commRange agentSpeed p numAgents
-                    "brownian" -> do
-                      brownianModel arenaSize commRange agentSpeed numAgents
+                      teleportationModel arenaSize commRange agentSpeed p numAgents identityUpdate
+                    "uniform" -> do
+                      uniformModel arenaSize commRange agentSpeed numAgents identityUpdate
                     "crw"      -> do
                       let stdDev = read (head rest)
-                      crwModel arenaSize commRange agentSpeed stdDev numAgents
+                      crwModel arenaSize commRange agentSpeed stdDev numAgents identityUpdate
+                    "home"     -> do
+                      let stdDev = read (head rest)
+                          p = read (head $ tail rest)
+                      homingModel arenaSize commRange agentSpeed p stdDev numAgents identityUpdate
                     "levy"     -> do
                       -- the extra parameter on the command line is 0 < alpha
                       -- <= 2 for alpha = 2 the PDF becomes gaussian, for
@@ -45,10 +49,10 @@ main = do
                       let [m,r] = rest
                           mu = (-1) - (read m)
                           maxJump = read r
-                      levyModel arenaSize commRange agentSpeed mu 1 maxJump numAgents
+                      levyModel arenaSize commRange agentSpeed mu 1 maxJump numAgents identityUpdate
 
   simulate window background fps initialModel modelToPicture update
-  where speedup    = 2
+  where speedup    = 5
         update _ s = stepModel (realToFrac $ speedup * s)
         window     = InWindow "INet" (60 + (vizScale * 100), 60 + (vizScale * 100)) (10,10)
         fps        = 60

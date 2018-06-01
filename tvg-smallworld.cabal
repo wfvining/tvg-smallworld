@@ -22,6 +22,7 @@ executable tvg-smallworld
   build-depends:       base >= 4.7 && < 5
                      , random
                      , hmatrix >= 0.16
+                     , mersenne-random-pure64
                      , containers
                      , normaldistribution >= 1.1
 
@@ -35,6 +36,7 @@ executable tvg-viz
                      , random
                      , hmatrix >= 0.16
                      , containers
+                     , mersenne-random-pure64
                      , normaldistribution >= 1.1
                      , gloss
                        
