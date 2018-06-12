@@ -6,6 +6,7 @@ module Model
   , Point(..)
   , MovementRule(..)
   , UpdateRule(..)
+  , AgentState(..)
   , newModel
   , mapAgents
   , getInteractions
@@ -18,6 +19,9 @@ module Model
   , teleportationModel
   , distance
   , identityUpdate
+  , density
+
+  , simpleMajority
   ) where
 
 import Control.Monad
@@ -56,10 +60,14 @@ data Model = Model { agents     :: [Agent] -- list of agents
                    , move       :: !MovementRule
                    }
 
+opposite :: AgentState -> AgentState
+opposite Black = White
+opposite White = Black
+
 simpleMajority :: UpdateRule
-simpleMajority states a = if (length $ filter (==Black) ((state a):states)) > (length states) `div` 2
-                          then a { state = Black }
-                          else a { state = White }
+simpleMajority states a = if (length $ filter (/=(state a)) states) > (length states) `div` 2
+                          then a { state = opposite (state a) }
+                          else a
 
 identityUpdate :: UpdateRule
 identityUpdate _ a = a
@@ -71,10 +79,11 @@ newModel :: Double
          -> Initializer
          -> UpdateRule
          -> MovementRule
+         -> Double
          -> StdGen
          -> Model
-newModel size range speed n init updateRule movementRule gen =
-  Model { agents     = makeAgents speed init n gen
+newModel size range speed n init updateRule movementRule p gen =
+  Model { agents     = makeAgents speed init n p gen
         , size       = size/2
         , range      = range
         , numAgents  = n
@@ -87,17 +96,20 @@ newModel size range speed n init updateRule movementRule gen =
 makeAgents :: Double
            -> Initializer
            -> Int
+           -> Double
            -> StdGen
            -> [Agent]
-makeAgents speed init n gen =
-  [ let (position, heading) = init i in Agent { agentID = i
-                                              , position = position
-                                              , heading = heading
-                                              , rng = gen
-                                              , speed = speed
-                                              , state = Black
-                                              , updatePredicate = Nothing }
-  | (i, gen) <- zip [0..(n-1)] (map fst . iterate (split . snd) $ split gen) ]
+makeAgents speed init n p gen =
+  [ let (position, heading) = init i
+        (c, gen'') = randomR (0,1::Double) gen'
+    in Agent { agentID = i
+             , position = position
+             , heading = heading
+             , rng = gen''
+             , speed = speed
+             , state = if c < p then Black else White
+             , updatePredicate = Nothing }
+  | (i, gen') <- zip [0..(n-1)] (map fst . iterate (split . snd) $ split gen) ]
 
 teleport :: Double -> Double -> Double -> (Point -> Double -> Double -> Double -> Point)
 teleport p w h = (\c p' x y -> if p' < p then (w*(x - 0.5), h*(y - 0.5)) else c)
@@ -152,7 +164,7 @@ teleportationModel arenaSize commRange agentSpeed p numAgents update = do
                                        }
                              else a { rng = gen })
       s = ceiling . sqrt $ fromIntegral numAgents
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update teleportation g
+  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update teleportation 0.45 g
 
 uniformModel :: Double -> Double -> Double -> Int -> UpdateRule -> IO Model
 uniformModel arenaSize commRange agentSpeed numAgents update = do
@@ -161,7 +173,7 @@ uniformModel arenaSize commRange agentSpeed numAgents update = do
                 let (newHeading, gen) = randomR (0, 2*pi) $ rng a
                 in a { rng = gen, heading = newHeading })
       s = ceiling . sqrt $ fromIntegral numAgents
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update turn g
+  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update turn 0.0 g
 
 crwModel :: Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
 crwModel arenaSize commRange agentSpeed sigma numAgents update = do
@@ -170,13 +182,13 @@ crwModel arenaSize commRange agentSpeed sigma numAgents update = do
                 let (newHeading, gen) = normal' ((heading a), sigma*pi) (rng a)
                 in a { rng = gen, heading = newHeading })
       s = ceiling . sqrt $ fromIntegral numAgents
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update turn g
+  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update turn 0.0 g
 
 
 homingModel :: Double -> Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
 homingModel arenaSize commRange agentSpeed p sigma numAgents update = do
   g <- newStdGen
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update movement g
+  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update movement 0.45 g
   where movement :: Agent -> Agent
         movement a =
           if shouldUpdate a
@@ -210,7 +222,7 @@ shouldUpdate a = case updatePredicate a of
 levyModel :: Double -> Double -> Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
 levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents update = do
   g <- newStdGen
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update walk g
+  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update walk 0.45 g
   where walk :: Agent -> Agent
         walk a =
           if shouldUpdate a
@@ -233,7 +245,7 @@ levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents update = d
 
         reflect (x,y) heading
           | (x < maxCoord) && (x > minCoord) && (y < maxCoord) && (y > minCoord) = (x, y)
-          | otherwise = let (p, h) = bounce x y heading in reflect p h
+          | otherwise = let (p, h) = bounce heading x y in reflect p h
 
         minCoord = -(arenaSize / 2)
         maxCoord = (arenaSize / 2)
@@ -303,7 +315,7 @@ stepModel stepSize m = m { time = time'
         time' = time m + stepSize
 
         updateState :: Model -> Agent -> Agent
-        updateState m a = (update m) (getNeighborState m a) a
+        updateState m a = if time m < 500 then a else (update m) (getNeighborState m a) a
 
         xMax = size m
         yMax = size m
@@ -364,3 +376,6 @@ getNeighborState m a = [ state n | n <- agents m, distance (position a) (positio
 
 mapAgents :: (Agent -> a) -> Model -> [a]
 mapAgents f m = map f (agents m)
+
+density :: Model -> Double
+density m = (sum $ mapAgents (\a -> if state a == Black then 1 else 0) m) / (fromIntegral $ length (agents m))
