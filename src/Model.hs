@@ -69,11 +69,13 @@ simpleMajority states a = if (length $ filter (/=(state a)) states) > (length st
 identityUpdate :: UpdateRule
 identityUpdate _ a = a
 
+toUpdateRule Identity = identityUpdate
+toUpdateRule SimpleMajority = simpleMajority
+
 newModel :: TVGConfig
          -> Initializer
-         -> UpdateRule
          -> Model
-newModel config init updateRule =
+newModel config init =
   Model { agents     = makeAgents (agentSpeed config)
                                   init
                                   (nAgents config)
@@ -85,7 +87,7 @@ newModel config init updateRule =
         , time       = 0
         , nextUpdate = 0
         , move       = makeMovementRule (worldSize config) (movementStrategy config)
-        , update     = updateRule
+        , update     = toUpdateRule $ updateRule config
         }
 
 makeMovementRule :: Double -> MovementStrategy -> MovementRule

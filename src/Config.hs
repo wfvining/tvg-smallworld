@@ -2,11 +2,14 @@
 module Config
   ( TVGConfig(..)
   , MovementStrategy(..)
+  , Rule(..)
   , loadConfig
   ) where
 
 import Control.Applicative
 import Text.ParserCombinators.ReadP
+
+data Rule = Identity | SimpleMajority deriving Show
 
 data MovementStrategy = Ballistic
                       | CRW      { sigma :: Double }
@@ -27,6 +30,7 @@ data TVGConfig = TVGConfig { seed :: Int
                            , movementStrategy :: MovementStrategy
                            , initialDensity :: Double
                            , communicationRange :: Double
+                           , updateRule :: Rule
                            } deriving Show
 
 loadConfig :: FilePath -> IO TVGConfig
@@ -46,6 +50,7 @@ configuration = do
   reps  <- integerParameter "repetitions"
   rate  <- parameter "rate"
   maxs  <- integerParameter "max-ticks"
+  r     <- rule
   return $ TVGConfig { seed = seed
                      , nAgents = n
                      , agentSpeed = speed
@@ -55,7 +60,8 @@ configuration = do
                      , rate = rate
                      , maxSteps = maxs
                      , initialDensity = d
-                     , movementStrategy = strat }
+                     , movementStrategy = strat
+                     , updateRule = r }
 
 strategyName :: ReadP String
 strategyName = do
@@ -100,6 +106,11 @@ parameter name = do
   p <- positiveFloat
   char '\n'
   return p
+
+rule :: ReadP Rule
+rule = do
+  param "ca-rule"
+  (string "simple-majority" >> return SimpleMajority) <|> (string "identity" >> return Identity)
 
 strategyConfig "ballistic" = return Ballistic
 strategyConfig "crw" = do

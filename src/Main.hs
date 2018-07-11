@@ -19,7 +19,7 @@ main = do
   [configFile,dataDir] <- getArgs
   config <- loadConfig configFile
 
-  let model = newModel config (initSquare . ceiling . sqrt . fromIntegral $ nAgents config) identityUpdate
+  let model = newModel config (initSquare . ceiling . sqrt . fromIntegral $ nAgents config)
       inet = getInteractionNetworkAfter 1000 (runModel 1.0 1500 model)
       temporalBST = allPairsBFS inet
   putStrLn $ "TCC:  " ++ (show $ tcc inet)

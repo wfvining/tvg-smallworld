@@ -35,7 +35,7 @@ main = do
   [configFile] <- getArgs
   config <- loadConfig configFile
 
-  let initialModel = newModel config (initSquare . ceiling . sqrt . fromIntegral $ nAgents config) identityUpdate
+  let initialModel = newModel config (initSquare . ceiling . sqrt . fromIntegral $ nAgents config)
   
   -- (last $ runModel 1.0 500 initialModel)
   simulate window background fps (last $ runModel 1.0 400 initialModel) modelToPicture update
