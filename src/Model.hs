@@ -12,14 +12,10 @@ module Model
   , getInteractions
   , stepModel
   , runModel
-  , levyModel
-  , crwModel
-  , homingModel
-  , uniformModel
-  , teleportationModel
   , distance
   , identityUpdate
   , density
+  , initSquare
 
   , simpleMajority
   ) where
@@ -28,6 +24,7 @@ import Control.Monad
 import System.Random
 import Data.Random.Normal
 import Data.Maybe
+import Config
 
 type Point = (Double, Double)
 
@@ -72,26 +69,117 @@ simpleMajority states a = if (length $ filter (/=(state a)) states) > (length st
 identityUpdate :: UpdateRule
 identityUpdate _ a = a
 
-newModel :: Double
-         -> Double
-         -> Double
-         -> Int
+newModel :: TVGConfig
          -> Initializer
          -> UpdateRule
-         -> MovementRule
-         -> Double
-         -> StdGen
          -> Model
-newModel size range speed n init updateRule movementRule p gen =
-  Model { agents     = makeAgents speed init n p gen
-        , size       = size/2
-        , range      = range
-        , numAgents  = n
+newModel config init updateRule =
+  Model { agents     = makeAgents (agentSpeed config)
+                                  init
+                                  (nAgents config)
+                                  (initialDensity config)
+                                  (mkStdGen $ seed config)
+        , size       = (worldSize config)/2
+        , range      = communicationRange config
+        , numAgents  = nAgents config
         , time       = 0
         , nextUpdate = 0
-        , move       = movementRule
+        , move       = makeMovementRule (worldSize config) (movementStrategy config)
         , update     = updateRule
         }
+
+makeMovementRule :: Double -> MovementStrategy -> MovementRule
+makeMovementRule worldSize Ballistic = id
+makeMovementRule worldSize Teleport{pJump = p} =
+    (\a ->
+         let (p', gen) = randomR (0,1) $ rng a
+         in if p' < p
+            then let (x, gen')  = randomR (0, 1) gen
+                     (y, gen'') = randomR (0, 1) gen'
+                 in a { rng = gen''
+                      , position = (worldSize  * (x - 0.5), worldSize * (y - 0.5))
+                      }
+            else a { rng = gen })
+makeMovementRule _ CRW{sigma=sigma} =
+    (\a -> let (newHeading, gen) = normal' ((heading a), sigma*pi) (rng a)
+           in a { rng = gen, heading = newHeading })
+makeMovementRule _ Homing{sigma=sigma, pHome=p} =
+    (\a ->
+         if shouldUpdate a
+         then -- go home
+             let (p', gen) = randomR (0,1) (rng a) in
+             if p' < p
+             then
+                 a { rng = gen
+                   , updatePredicate = Just isHome
+                   , heading = (2*pi) - (pi - (direction (position a)))
+                   }
+             else -- just do a correlated random walk
+                 let (newHeading, gen') = if isJust $ updatePredicate a
+                                          then randomR (0, 2*pi) gen
+                                          else normal' ((heading a), sigma*pi) gen in
+                 a { rng = gen'
+                   , heading = newHeading
+                   , updatePredicate = Nothing }
+         else a)
+        where isHome a = distance (position a) (0,0) < 1.0
+makeMovementRule worldSize Levy{alpha=alpha, maxStep=maxStep} =
+    (\a -> if shouldUpdate a
+           then let (d, gen)  = randomR (0,1) (rng a)
+                    (newHeading, gen') = randomR (0, 2*pi) gen
+                    (currentX, currentY) = position a
+                    stepLength = powerLaw 1.0 maxStep ((-1) - alpha) d
+                    x = currentX + (stepLength * cos newHeading)
+                    y = currentY + (stepLength * sin newHeading)
+                    target = fst $ reflect worldSize (x, y) newHeading
+                in a { rng = gen
+                     , updatePredicate = Just (isAt target)
+                     , heading = newHeading
+                     }
+           else a)
+
+isAt :: Point -> Agent -> Bool
+isAt t a = distance (position a) t < 1.0
+
+reflect :: Double -> Point -> Double -> (Point, Double)
+reflect arenaSize (x, y) heading
+    | (x < maxCoord) && (x > minCoord) && (y < maxCoord) && (y > minCoord) = ((x, y), heading)
+    | otherwise = let (p, h) = bounce heading x y in reflect arenaSize p h
+    where bounce :: Double -> Double -> Double -> (Point, Double)
+          bounce heading x y
+              | x > xMax && y > yMax =
+                  let heading' = reflectX heading
+                      heading'' = reflectY heading'
+                  in
+                    ((x - 2 * (x - xMax), y - 2 * (y - yMax)), heading'')
+              | x < xMin && y < yMin =
+                  let heading'  = reflectX heading
+                      heading'' = reflectY heading'
+                  in
+                    ((x - 2 * (x - xMin), y - 2 * (y - yMin)), heading'')
+              | x > xMax && y < yMin =
+                  let heading'  = reflectX heading
+                      heading'' = reflectY heading'
+                  in
+                    ((x - 2 * (x - xMax), y - 2 * (y - yMin)), heading'')
+              | x < xMin && y > yMax =
+                  let heading'  = reflectX heading
+                      heading'' = reflectY heading'
+                  in
+                    ((x - 2 * (x - xMin), y - 2 * (y - yMax)), heading'')
+              | x < xMin             = ((x - 2 * (x - xMin), y), reflectY heading)
+              | x > xMax             = ((x - 2 * (x - xMax), y), reflectY heading)
+              | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
+              | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
+              | otherwise = ((x, y), heading)
+
+          minCoord = -(arenaSize / 2)
+          maxCoord = (arenaSize / 2)
+
+          xMin = minCoord
+          yMin = minCoord
+          xMax = maxCoord
+          yMax = maxCoord
 
 makeAgents :: Double
            -> Initializer
@@ -151,6 +239,7 @@ initSquare dimension = initRectangle dimension dimension
 initCenter :: [Double] -> Initializer
 initCenter xs = (\aid -> ((0,0), xs !! aid))
 
+{-
 teleportationModel :: Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
 teleportationModel arenaSize commRange agentSpeed p numAgents update = do
   g <- newStdGen
@@ -213,11 +302,6 @@ homingModel arenaSize commRange agentSpeed p sigma numAgents update = do
         
         isHome :: Agent -> Bool
         isHome a = distance (position a) (0,0) < 1.0
-
-shouldUpdate :: Agent -> Bool
-shouldUpdate a = case updatePredicate a of
-                   Just f  -> f a
-                   Nothing -> True
 
 levyModel :: Double -> Double -> Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
 levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents update = do
@@ -282,6 +366,12 @@ levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents update = d
           | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
           | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
           | otherwise = ((x, y), heading)
+-}
+
+shouldUpdate :: Agent -> Bool
+shouldUpdate a = case updatePredicate a of
+                   Just f  -> f a
+                   Nothing -> True
 
 -- reflect a unit vector across the x-axis returning the direction of
 -- the resulting vector

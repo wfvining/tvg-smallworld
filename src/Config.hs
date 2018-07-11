@@ -18,7 +18,7 @@ data MovementStrategy = Ballistic
                       deriving Show
 
 data TVGConfig = TVGConfig { seed :: Int
-                           , numAgents :: Int
+                           , nAgents :: Int
                            , agentSpeed :: Double
                            , worldSize :: Double
                            , numRepetitions :: Int
@@ -26,6 +26,7 @@ data TVGConfig = TVGConfig { seed :: Int
                            , maxSteps :: Int
                            , movementStrategy :: MovementStrategy
                            , initialDensity :: Double
+                           , communicationRange :: Double
                            } deriving Show
 
 loadConfig :: FilePath -> IO TVGConfig
@@ -40,13 +41,15 @@ configuration = do
   n     <- integerParameter "num-agents"
   d     <- parameter "initial-density"
   speed <- parameter "agent-speed"
+  comm  <- parameter "communication-range"
   size  <- parameter "size"
   reps  <- integerParameter "repetitions"
   rate  <- parameter "rate"
   maxs  <- integerParameter "max-ticks"
   return $ TVGConfig { seed = seed
-                     , numAgents = n
+                     , nAgents = n
                      , agentSpeed = speed
+                     , communicationRange = comm
                      , worldSize = size
                      , numRepetitions = reps
                      , rate = rate

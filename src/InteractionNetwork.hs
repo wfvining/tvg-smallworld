@@ -160,3 +160,4 @@ bfs net source = bfs' 1 (graph net) (bit source) (S.singleton source) [(source, 
         -- | Get all nodes adjacent to n that have not beed discovered yet.
         explore :: Integer -> Snapshot -> Int -> [Int]
         explore visited s source = map (snd . fst) $ filter (\((x,y),z) -> (z /= 0) && (x == source) && (not $ testBit visited y)) s
+

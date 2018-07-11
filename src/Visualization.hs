@@ -1,6 +1,7 @@
 module Main where
 
 import Model
+import Config
 import System.Environment
 
 import Graphics.Gloss
@@ -31,32 +32,11 @@ modelToPicture m =
 
 main :: IO ()
 main = do
-  (motionType:n:arena:rest) <- getArgs
-  let arenaSize = read arena
-      numAgents = read n
+  [configFile] <- getArgs
+  config <- loadConfig configFile
 
-  initialModel <- case motionType of
-                    "teleport" -> do
-                      let p = read (head rest)
-                      teleportationModel arenaSize commRange agentSpeed p numAgents simpleMajority
-                    "uniform" -> do
-                      uniformModel arenaSize commRange agentSpeed numAgents identityUpdate
-                    "crw"      -> do
-                      let stdDev = read (head rest)
-                      crwModel arenaSize commRange agentSpeed stdDev numAgents identityUpdate
-                    "home"     -> do
-                      let stdDev = read (head rest)
-                          p = read (head $ tail rest)
-                      homingModel arenaSize commRange agentSpeed p stdDev numAgents simpleMajority
-                    "levy"     -> do
-                      -- the extra parameter on the command line is 0 < alpha
-                      -- <= 2 for alpha = 2 the PDF becomes gaussian, for
-                      -- alpha = 1 The PDF is a Cauchy distribution.
-                      let [m,r] = rest
-                          mu = (-1) - (read m)
-                          maxJump = read r
-                      levyModel arenaSize commRange agentSpeed mu 1 maxJump numAgents simpleMajority
-
+  let initialModel = newModel config (initSquare . ceiling . sqrt . fromIntegral $ nAgents config) identityUpdate
+  
   -- (last $ runModel 1.0 500 initialModel)
   simulate window background fps (last $ runModel 1.0 400 initialModel) modelToPicture update
   where speedup    = 20
@@ -64,6 +44,4 @@ main = do
         window     = InWindow "INet" (60 + (vizScale * 100), 60 + (vizScale * 100)) (10,10)
         fps        = 60
         background = white
-        commRange  = 5
-        agentSpeed = 1.0
   
