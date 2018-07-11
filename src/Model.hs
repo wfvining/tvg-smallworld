@@ -28,7 +28,7 @@ import Config
 
 type Point = (Double, Double)
 
-type Initializer = (Int -> (Point, Double))
+type Initializer = (Int -> StdGen -> (Point, Double))
 
 data AgentState = Black | White deriving Eq
 
@@ -190,12 +190,13 @@ makeAgents :: Double
            -> StdGen
            -> [Agent]
 makeAgents speed init n p gen =
-  [ let (position, heading) = init i
-        (c, gen'') = randomR (0,1::Double) gen'
+  [ let (initGen, stateGen) = split gen'
+        (position, heading) = init i initGen
+        (c, agentGen) = randomR (0,1::Double) stateGen
     in Agent { agentID = i
              , position = position
              , heading = heading
-             , rng = gen''
+             , rng = agentGen
              , speed = speed
              , state = if c < p then Black else White
              , updatePredicate = Nothing }
@@ -228,18 +229,20 @@ direction (x, y) =
 
 initRectangle :: Int -> Int -> Initializer
 initRectangle dimensionX dimensionY =
-  (\agentID -> let position@(x,y) = (fromIntegral $ upperLeftX + (agentID `div` dimensionX),
-                                     fromIntegral $ upperLeftY - (agentID `rem` dimensionX)) in
-                 (position, direction position))
+  (\agentID _ -> let position@(x,y) = (fromIntegral $ upperLeftX + (agentID `div` dimensionX),
+                                       fromIntegral $ upperLeftY - (agentID `rem` dimensionX)) in
+                   (position, direction position))
   where upperLeftX = -(dimensionX `div` 2)
         upperLeftY = dimensionY `div` 2
 
 initSquare :: Int -> Initializer
-initSquare dimension = initRectangle dimension dimension
+initSquare numAgents = initRectangle dimension dimension
+  where dimension = ceiling . sqrt $ fromIntegral numAgents
 
 -- super not efficient
 initCenter :: [Double] -> Initializer
-initCenter xs = (\aid -> ((0,0), xs !! aid))
+--initCenter xs = (\aid -> ((0,0), xs !! aid))
+initCenter = undefined
 
 {-
 teleportationModel :: Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
