@@ -202,7 +202,7 @@ makeAgents speed init n p gen =
              , heading = heading
              , rng = agentGen
              , speed = speed
-             , state = if i `div` (floor $ (fromIntegral n) * p) == 0 then Black else White -- if c < p then Black else White
+             , state = if p > 0 && i `div` (round $ (fromIntegral n) * p) == 0 then Black else White -- if c < p then Black else White
              , updatePredicate = Nothing }
   | (i, gen') <- zip [0..(n-1)] (map fst . iterate (split . snd) $ split gen) ]
 
