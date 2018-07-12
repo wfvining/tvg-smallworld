@@ -202,7 +202,7 @@ makeAgents speed init n p gen =
              , heading = heading
              , rng = agentGen
              , speed = speed
-             , state = if c < p then Black else White
+             , state = if i `div` (floor $ (fromIntegral n) * p) == 0 then Black else White -- if c < p then Black else White
              , updatePredicate = Nothing }
   | (i, gen') <- zip [0..(n-1)] (map fst . iterate (split . snd) $ split gen) ]
 
@@ -240,8 +240,8 @@ initRectangle dimensionX dimensionY =
         upperLeftY = dimensionY `div` 2
 
 initSquare :: Int -> Initializer
-initSquare numAgents = initRectangle dimension dimension
-  where dimension = ceiling . sqrt $ fromIntegral numAgents
+initSquare numAgents = initUniform dimension
+  where dimension = sqrt $ fromIntegral numAgents
 
 initCenter :: Initializer
 initCenter id gen = let (heading, _) = randomR (0,2*pi) gen
