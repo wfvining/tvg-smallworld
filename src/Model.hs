@@ -73,11 +73,10 @@ toUpdateRule Identity = identityUpdate
 toUpdateRule SimpleMajority = simpleMajority
 
 newModel :: TVGConfig
-         -> Initializer
          -> Model
-newModel config init =
+newModel config =
   Model { agents     = makeAgents (agentSpeed config)
-                                  init
+                                  (initializer config)
                                   (nAgents config)
                                   (initialDensity config)
                                   (mkStdGen $ seed config)
@@ -89,6 +88,11 @@ newModel config init =
         , move       = makeMovementRule (worldSize config) (movementStrategy config)
         , update     = toUpdateRule $ updateRule config
         }
+
+initializer :: TVGConfig -> Initializer
+initializer TVGConfig{ initialize=Square, nAgents = n }     = initSquare n
+initializer TVGConfig{ initialize=Origin }                  = initCenter
+initializer TVGConfig{ initialize=Uniform, worldSize=size } = initUniform size
 
 makeMovementRule :: Double -> MovementStrategy -> MovementRule
 makeMovementRule worldSize Ballistic = id
@@ -239,139 +243,16 @@ initSquare :: Int -> Initializer
 initSquare numAgents = initRectangle dimension dimension
   where dimension = ceiling . sqrt $ fromIntegral numAgents
 
--- super not efficient
-initCenter :: [Double] -> Initializer
---initCenter xs = (\aid -> ((0,0), xs !! aid))
-initCenter = undefined
+initCenter :: Initializer
+initCenter id gen = let (heading, _) = randomR (0,2*pi) gen
+                    in ((0,0), heading)
 
-{-
-teleportationModel :: Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
-teleportationModel arenaSize commRange agentSpeed p numAgents update = do
-  g <- newStdGen
-  let teleportation  = (\a ->
-                          let (p', gen) = randomR (0,1) $ rng a
-                          in if p' < p
-                             then let (x, gen')  = randomR (0, 1) gen
-                                      (y, gen'') = randomR (0, 1) gen'
-                                  in a { rng = gen''
-                                       , position = (arenaSize  * (x - 0.5), arenaSize * (y - 0.5))
-                                       }
-                             else a { rng = gen })
-      s = ceiling . sqrt $ fromIntegral numAgents
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update teleportation 0.45 g
-
-uniformModel :: Double -> Double -> Double -> Int -> UpdateRule -> IO Model
-uniformModel arenaSize commRange agentSpeed numAgents update = do
-  g <- newStdGen
-  let turn = (\a ->
-                let (newHeading, gen) = randomR (0, 2*pi) $ rng a
-                in a { rng = gen, heading = newHeading })
-      s = ceiling . sqrt $ fromIntegral numAgents
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update turn 0.0 g
-
-crwModel :: Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
-crwModel arenaSize commRange agentSpeed sigma numAgents update = do
-  g <- newStdGen
-  let turn = (\a ->
-                let (newHeading, gen) = normal' ((heading a), sigma*pi) (rng a)
-                in a { rng = gen, heading = newHeading })
-      s = ceiling . sqrt $ fromIntegral numAgents
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update turn 0.0 g
-
-
-homingModel :: Double -> Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
-homingModel arenaSize commRange agentSpeed p sigma numAgents update = do
-  g <- newStdGen
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update movement 0.45 g
-  where movement :: Agent -> Agent
-        movement a =
-          if shouldUpdate a
-          then -- go home
-            let (p', gen) = randomR (0,1) (rng a) in
-              if p' < p
-              then
-                a { rng = gen
-                  , updatePredicate = Just isHome
-                  , heading = (2*pi) - (pi - (direction (position a)))
-                  }
-              else -- just do a random walk
-                let (newHeading, gen') = if isJust $ updatePredicate a
-                                         then randomR (0, 2*pi) gen
-                                         else normal' ((heading a), sigma*pi) gen in
-                  a { rng = gen'
-                    , heading = newHeading
-                    , updatePredicate = Nothing }
-          else a
-
-        s = ceiling . sqrt $ fromIntegral numAgents
-        
-        isHome :: Agent -> Bool
-        isHome a = distance (position a) (0,0) < 1.0
-
-levyModel :: Double -> Double -> Double -> Double -> Double -> Double -> Int -> UpdateRule -> IO Model
-levyModel arenaSize commRange agentSpeed mu minStep maxStep numAgents update = do
-  g <- newStdGen
-  return $ newModel arenaSize commRange agentSpeed numAgents (initSquare s) update walk 0.45 g
-  where walk :: Agent -> Agent
-        walk a =
-          if shouldUpdate a
-          then let (d, gen)  = randomR (0,1) (rng a)
-                   (newHeading, gen') = randomR (0, 2*pi) gen
-                   (currentX, currentY) = position a
-                   stepLength = powerLaw minStep maxStep mu d
-                   x = currentX + (stepLength * cos newHeading)
-                   y = currentY + (stepLength * sin newHeading)
-                   target = reflect (x, y) newHeading
-               in a { rng = gen
-                    , updatePredicate = Just (isAt target)
-                    , heading = newHeading
-                    }
-          else a
-
-        isAt t a = distance (position a) t < 1.0
-
-        s = ceiling . sqrt $ fromIntegral numAgents
-
-        reflect (x,y) heading
-          | (x < maxCoord) && (x > minCoord) && (y < maxCoord) && (y > minCoord) = (x, y)
-          | otherwise = let (p, h) = bounce heading x y in reflect p h
-
-        minCoord = -(arenaSize / 2)
-        maxCoord = (arenaSize / 2)
-
-        xMin = minCoord
-        yMin = minCoord
-        xMax = maxCoord
-        yMax = maxCoord
-
-        bounce :: Double -> Double -> Double -> (Point, Double)
-        bounce heading x y
-          | x > xMax && y > yMax =
-            let heading' = reflectX heading
-                heading'' = reflectY heading'
-            in
-              ((x - 2 * (x - xMax), y - 2 * (y - yMax)), heading'')
-          | x < xMin && y < yMin =
-            let heading'  = reflectX heading
-                heading'' = reflectY heading'
-            in
-              ((x - 2 * (x - xMin), y - 2 * (y - yMin)), heading'')
-          | x > xMax && y < yMin =
-            let heading'  = reflectX heading
-                heading'' = reflectY heading'
-            in
-              ((x - 2 * (x - xMax), y - 2 * (y - yMin)), heading'')
-          | x < xMin && y > yMax =
-            let heading'  = reflectX heading
-                heading'' = reflectY heading'
-            in
-              ((x - 2 * (x - xMin), y - 2 * (y - yMax)), heading'')
-          | x < xMin             = ((x - 2 * (x - xMin), y), reflectY heading)
-          | x > xMax             = ((x - 2 * (x - xMax), y), reflectY heading)
-          | y < yMin             = ((x, y - 2 * (y - yMin)), reflectX heading)
-          | y > yMax             = ((x, y - 2 * (y - yMax)), reflectX heading)
-          | otherwise = ((x, y), heading)
--}
+initUniform :: Double -> Initializer
+initUniform size _ gen = let (heading, gen') = randomR (0, 2*pi) gen
+                             (x, gen'')      = randomR (-maxCoord, maxCoord) gen'
+                             (y, _)          = randomR (-maxCoord, maxCoord) gen''
+                         in ((x,y), heading)
+  where maxCoord = size / 2
 
 shouldUpdate :: Agent -> Bool
 shouldUpdate a = case updatePredicate a of

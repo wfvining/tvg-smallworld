@@ -32,10 +32,14 @@ modelToPicture m =
 
 main :: IO ()
 main = do
-  [configFile] <- getArgs
-  config <- loadConfig configFile
+  (configFile:rest) <- getArgs
+  conf <- loadConfig configFile
+  let config = case rest of
+                 [s] -> conf { seed = read s }
+                 []  -> conf                 
 
-  let initialModel = newModel config (initSquare . ceiling . sqrt . fromIntegral $ nAgents config)
+  let initialModel = newModel config
+  -- (initSquare . ceiling . sqrt . fromIntegral $ nAgents config)
   
   -- (last $ runModel 1.0 500 initialModel)
   simulate window background fps (last $ runModel 1.0 400 initialModel) modelToPicture update
