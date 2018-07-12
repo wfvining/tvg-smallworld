@@ -20,7 +20,6 @@ data MovementStrategy = Ballistic
                       | Homing   { sigma :: Double
                                  , pHome :: Double }
                       | Teleport { pJump :: Double }
-                      deriving Show
 
 data TVGConfig = TVGConfig { seed :: Int
                            , nAgents :: Int
@@ -35,6 +34,14 @@ data TVGConfig = TVGConfig { seed :: Int
                            , updateRule :: Rule
                            , initialize :: Init
                            } deriving Show
+
+instance Show MovementStrategy where
+    show (Levy a m) = "levy-" ++ (show a) ++ "-" ++ show m
+    show (Homing s p) = "home-" ++ (show s) ++ "-" ++ show p
+    show (Teleport p) = "teleport-" ++ show p
+    show (CRW s) = "crw-" ++ show s
+    show Ballistic = "ballistic"
+
 
 loadConfig :: FilePath -> IO TVGConfig
 loadConfig configFile = do

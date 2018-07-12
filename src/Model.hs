@@ -66,6 +66,11 @@ simpleMajority states a = if (length $ filter (/=(state a)) states) > (length st
                           then a { state = opposite (state a) }
                           else a
 
+simpleSynchronization :: UpdateRule
+simpleSynchronization states a = if (length $ filter (/=(state a)) states) > (length states) `div` 2
+                                 then a
+                                 else a { state = opposite (state a) }
+
 identityUpdate :: UpdateRule
 identityUpdate _ a = a
 
