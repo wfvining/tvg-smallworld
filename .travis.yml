@@ -8,6 +8,8 @@
 # Copy these contents into the root directory of your Github project in a file
 # named .travis.yml
 
+dist: xenial
+
 # Use new container infrastructure to enable caching
 sudo: false
 
