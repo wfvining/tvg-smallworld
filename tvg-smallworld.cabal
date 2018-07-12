@@ -27,6 +27,20 @@ executable tvg-smallworld
                      , containers
                      , normaldistribution >= 1.1
 
+executable tvg-eval
+  hs-source-dirs:      src
+  main-is:             EvalCA.hs
+  other-modules:       Model
+                     , InteractionNetwork
+                     , Config
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                     , random
+                     , hmatrix >= 0.16
+                     , mersenne-random-pure64
+                     , containers
+                     , normaldistribution >= 1.1
+
 executable tvg-viz
   hs-source-dirs:      src
   main-is:             Visualization.hs
