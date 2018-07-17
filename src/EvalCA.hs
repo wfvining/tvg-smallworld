@@ -9,16 +9,18 @@ import System.IO
 evalReplica :: Int -> TVGConfig -> [Double]
 evalReplica r config =
     let replicaConfig = config { seed = r + seed config }
-    in padTo (numRepetitions config)
-           $ takeWhile (\currentDensity -> currentDensity /= 0.0 && currentDensity /= 1.0)
-           $ take (maxSteps config)
-           $ map density
-           $ iterate (stepModel 1.0) (newModel replicaConfig)
-        where padTo :: Int -> [Double] -> [Double]
-              padTo n xs = let l = length xs in
-                           if l < n
-                           then xs ++ (replicate (n-l) (last xs))
-                           else xs
+        (densities, rest) = span (\currentDensity -> currentDensity /= 0.0 && currentDensity /= 1.0)
+                                 $ take (maxSteps config)
+                                 $ map density
+                                 $ iterate (stepModel 1.0) (newModel replicaConfig)
+    in case rest of
+      [] -> densities
+      (final:_) -> padTo (maxSteps config) (densities ++ [final])
+  where padTo :: Int -> [Double] -> [Double]
+        padTo n xs = let l = length xs in
+                       if l < n
+                       then xs ++ (replicate (n-l) (last xs))
+                       else xs
                                 
 
 saveDensityTimeSeries :: FilePath -> TVGConfig -> [[Double]] -> IO ()
