@@ -1,11 +1,11 @@
 #!/bin/bash
 
-echo "# initialDensity alpha maxStep averageCorrectness"
-for initial_density in `seq 0.1 0.05 0.9`
+echo "Density alpha maxStep averageCorrectness"
+for initial_density in `seq 0.0 0.01 1.001`
 do
-    for alpha in `seq 0.2 0.2 2.0`
+    for alpha in 0.2 0.4 0.8 1.2 1.9
     do
-        stack exec tvg-eval levy/levy-${alpha}_${initial_density}.conf ../data &
+        stack exec tvg-eval levy-127/levy-${alpha}_${initial_density}.conf ../data &
     done
     wait
 done
