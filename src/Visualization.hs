@@ -45,7 +45,7 @@ main = do
   -- simulate window background fps (last $ runModel 1.0 400 initialModel) modelToPicture update
   simulate window background fps initialModel modelToPicture update
   where speedup    = 20
-        update _ s m = if density m > 0 && density m < 1 then stepModel (realToFrac $ speedup * s) m else m
+        update _ s m = {-if density m > 0 && density m < 1 then-} stepModel (realToFrac $ speedup * s) m -- else m
         window     = InWindow "INet" (60 + (vizScale * 100), 60 + (vizScale * 100)) (10,10)
         fps        = 60
         background = white

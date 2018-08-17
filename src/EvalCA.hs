@@ -55,9 +55,7 @@ main = do
 
   printPrefix config
   print $ successRate config runs
-      where successRate config runs = let finalDensities = map last runs
+      where successRate config runs = let results = zip (map (fromIntegral . round . head) runs) (map last runs)
                                       in (fromIntegral
-                                          $ length (filter
-                                                    (==(fromIntegral . round $ initialDensity config))
-                                                    finalDensities))
+                                          $ length (filter (uncurry (==)) results))
                                              / (fromIntegral $ numRepetitions config)
